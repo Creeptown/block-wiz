@@ -39,7 +39,7 @@ public class Board : MonoBehaviour {
   [Tooltip("Direction CellGroups should move")]
   public Gravity gravity = Gravity.Down;
 
-  private Game game;
+  private GameManager game;
 
   // Current round - is independent of other boards
   private int round = 0;
@@ -58,7 +58,7 @@ public class Board : MonoBehaviour {
   // Inactive (non-controllable cell groups)
   private CellGroup[,] landed;
 
-  public static Board Initialize(Game game) {
+  public static Board Initialize(GameManager game) {
     // copy initial values from game
     // save reference to game object
     return null;
@@ -79,7 +79,7 @@ public class Board : MonoBehaviour {
   }
 
   void SpawnActiveCellGroup() {
-    Game.GenerateCellGroup(round);
+    GameManager.GenerateCellGroup(round);
     return;
   }
 

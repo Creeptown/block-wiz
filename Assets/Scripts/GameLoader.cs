@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class GameLoader : MonoBehaviour {
-  public GameObject gameController;
+
+	public GameObject gameManager;
 
 	void Awake () {
-    if (Game.instance == null) Instantiate(gameController);
+		if (GameManager.instance == null) Instantiate(gameManager);
 	}
 }
