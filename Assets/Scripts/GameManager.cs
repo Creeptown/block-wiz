@@ -5,39 +5,57 @@ using UnityEngine;
 // Game is responsible for passing information between boards
 // and generating pieces for all boards
 public class GameManager : MonoBehaviour {
-    public static GameManager instance = null;
-    public static int seed = 0;
-    private static List<CellGroup> spawned = new List<CellGroup>();
+  public static GameManager instance = null;
+  [Tooltip("Whether Diamonds can spawn during this game")]
+  public bool allowDiamond = true;
+  [Tooltip("Random seed for generating cell sequence. Leave at zero to generate")]
+  public static int seed = 0;
+  [Tooltip("Number of cells to use when generating the player's piece")]
+  public int size = 2;
+  [Tooltip("Number of players in this game")]
+  public int playerCount = 1;
+  [Tooltip("Extra space between boards")]
+  public int boardPadding = 10;
+  [Tooltip("Board Prefab to use")]
+  public GameObject boardPrefab;
 
-    public int playerCount;
-    public Board boardScript;
+  List<GameObject> boards = new List<GameObject>();
+  List<Cell[]> spawned = new List<Cell[]>();
+  Cell.Type[] spawnableCellTypes = new Cell.Type[2] { Cell.Type.Normal, Cell.Type.Bomb };
 
-    // Either we need a way of idempotently generating
-    // a group based on the round and seed or we need to store
-    // previously generated results
-    // IDEA: canSpawn determines whether not we can spawn, so
-    // while we have less than 2 blocks we keep randomly generating
-    // until we have two that canSpawn - however that wouldn't 
-    // make it 
-    public static CellGroup GenerateCellGroup(int round) {
-        if (spawned[round] != null) return spawned[round];
-        // Generate new group and add it to the spawned
-        return null;
+  void Awake() {
+    if (instance == null) {
+      instance = this;
+    } else if (instance != this) {
+      Destroy(gameObject);
     }
 
-    void Awake() {
-        if (instance == null) {
-            instance = this;
-        } else if (instance != this) {
-            Destroy(gameObject);
-        }
-        if (seed == 0) seed = (int)System.DateTime.Now.Ticks;
-        DontDestroyOnLoad(gameObject);
-        boardScript = GetComponent<Board>();
-        // spawn boards
+    if (seed == 0) seed = (int)System.DateTime.Now.Ticks;
+    Random.InitState(seed);
+    DontDestroyOnLoad(gameObject);
+
+    for (int i = 0; i < playerCount; i++) {
+      var board = Instantiate(boardPrefab, Vector3.zero, Quaternion.identity) as GameObject;
+      board.GetComponent<Board>().gameManager = GetComponent<GameManager>();
+      boards.Add(board);
+    }
+  }
+
+  // TODO Probably can do some housekeeping to clear out older round spawns
+  public Cell[] RequestCellsForRound(int round) {
+    if (spawned.Count > round && spawned[round] != null) return spawned[round];
+    Cell.Color color;
+    Cell.Type type;
+    var cells = new Cell[size];
+
+    for (int i = 0; i < size; i++) {
+      type = spawnableCellTypes[Random.Range(0, spawnableCellTypes.Length)];
+      color = (Cell.Color)Random.Range(0, System.Enum.GetValues(typeof(Cell.Color)).Length);
+      cells[i] = new Cell(color, type, round);
     }
 
-    // Update is called once per frame
-    void Update () {
-    }
+    spawned.Add(cells);
+
+    return cells;
+  }
 }

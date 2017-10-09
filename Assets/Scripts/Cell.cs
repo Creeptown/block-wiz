@@ -1,8 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
-public class Cell : MonoBehaviour {
+﻿public class Cell {
   public enum Type {
     Normal,
     Bomb,
@@ -11,27 +7,26 @@ public class Cell : MonoBehaviour {
   }
 
   public enum Color {
-    All,
     Red,
     Green,
     Blue,
     Yellow
   }
 
-  public Type type;
-  public Color color;
+  internal Type type;
+  internal Color color;
+  internal CellGroup group;
+  internal Point position;
+  internal int roundCreated;
+  internal bool InGroup { get { return group != null; } }
 
-  private int RoundCreated = 0;
+  public Cell(Color c, Type t, int r) {
+    type = t;
+    color = c;
+    roundCreated = r;
+  }
 
-	// Use this for initialization
-	void Start () {
-	}
-	
-	// Update is called once per frame
-	void Update () {
-	}
-
-  public bool CanSpawn() {
-    return true;
+  public override string ToString() {
+    return "[Cell] Color: " + color + ", Type:" + type + " , Round Created:" + roundCreated;
   }
 }

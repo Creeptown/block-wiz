@@ -2,30 +2,24 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// CellGroups move as a unit and render their cells
-public class CellGroup : MonoBehaviour {
-  public enum State {
-    Spawning, // Cell is about to become Falling
-    Falling,  // Cell is moving towards target
-    Landed,   // Touching another CellGroup but still able to be moved
-    Fixed,    // No longer player controllable
-    Preview   // Showing upcoming CellGroup
+public class CellGroup {
+  internal Cell Cell { get; private set; }
+  internal Cell.Color Color { get { return Cell.color; } private set { } }
+  // col, width are for the leftmost bottom cell in a group
+  internal int col;
+  internal int row;
+  internal int width = 2;
+  internal int height = 2;
+
+  public CellGroup(Cell cell, int col, int row) {
+    this.Cell = cell;
+    this.col = col;
+    this.row = row;
   }
 
-  private Cell[,] cells;
-  private Vector3 targetPosition;
-  private State state;
-  private bool isPlayerControlled = false;
-  private int orientation = 0;
-
-	// Use this for initialization
-	void Start () {
-	}
-	
-	// Update is called once per frame
-	void Update () {
-	}
-
-  private void Render() {
+  public CellGroup(Cell cell, Point pos) {
+    this.Cell = cell;
+    this.col = pos.col;
+    this.row = pos.row;
   }
 }
