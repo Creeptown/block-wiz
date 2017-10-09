@@ -4,9 +4,16 @@ using UnityEngine;
 
 public class GameLoader : MonoBehaviour {
 
-	public GameObject gameManager;
+    public GameObject gameManager;
 
-	void Awake () {
-		if (GameManager.instance == null) Instantiate(gameManager);
-	}
+	void Awake() {
+        Settings settings = GetComponent<Settings>();
+
+        if (GameManager.instance == null) {
+            Instantiate(gameManager);
+            gameManager.GetComponent<GameManager>().playerCount = settings.numPlayers;
+
+            Debug.Log("Loading game with " + settings.numPlayers + " players");
+        }
+    }
 }
