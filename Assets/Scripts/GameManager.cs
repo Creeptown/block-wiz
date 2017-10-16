@@ -6,24 +6,12 @@ using UnityEngine;
 // and generating pieces for all boards
 public class GameManager : MonoBehaviour {
     public static GameManager instance = null;
-    public static int seed = 0;
-    private static List<CellGroup> spawned = new List<CellGroup>();
 
-    public int playerCount;
-    public Board boardScript;
+    public int playerCount = 2;
+    public Board boardPrefab;
+	public GameObject playArea;
 
-    // Either we need a way of idempotently generating
-    // a group based on the round and seed or we need to store
-    // previously generated results
-    // IDEA: canSpawn determines whether not we can spawn, so
-    // while we have less than 2 blocks we keep randomly generating
-    // until we have two that canSpawn - however that wouldn't 
-    // make it 
-    public static CellGroup GenerateCellGroup(int round) {
-        if (spawned[round] != null) return spawned[round];
-        // Generate new group and add it to the spawned
-        return null;
-    }
+    private Board[] boards;
 
     void Awake() {
         if (instance == null) {
@@ -31,13 +19,30 @@ public class GameManager : MonoBehaviour {
         } else if (instance != this) {
             Destroy(gameObject);
         }
-        if (seed == 0) seed = (int)System.DateTime.Now.Ticks;
         DontDestroyOnLoad(gameObject);
-        boardScript = GetComponent<Board>();
-        // spawn boards
+
     }
 
     // Update is called once per frame
     void Update () {
     }
+
+    void SpawnBoards() {
+    	boards = new Board[playerCount];
+
+    	for (int n = 0; n < playerCount; n++) {
+			boards[n] = SpawnSingleBoard(n);
+    	}
+    }
+
+    Board SpawnSingleBoard(int boardNum) {
+ //   	Vector2 pos = GetOriginForBoardNumber(boardNum);
+		Board board = Instantiate(boardPrefab);
+		return board;
+    }
+
+//    Vector2 GetOriginForBoardNumber(int boardNum) {
+//    	//playAreaPrefab.renderer.bounds.size.x;
+//		return new Vector2(boardNum * 500, 0);
+//    }
 }
