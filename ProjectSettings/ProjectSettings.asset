@@ -587,12 +587,13 @@ PlayerSettings:
       daydreamIconForeground: {fileID: 0}
       daydreamIconBackground: {fileID: 0}
   cloudServicesEnabled:
+    Collab: 0
     UNet: 1
   facebookSdkVersion: 7.9.4
   apiCompatibilityLevel: 2
-  cloudProjectId: e136869b-362c-4f26-99b7-7a152026cb2e
+  cloudProjectId: c8ea68c6-b9c0-4d83-b1f8-7a3a3a01eac6
   projectName: Blocks & Wizards
-  organizationId: garthwebb
+  organizationId: alexoid
   cloudEnabled: 0
   enableNativePlatformBackendsForNewInputSystem: 0
   disableOldInputManagerSupport: 0
