@@ -1,6 +1,6 @@
 fileFormatVersion: 2
 guid: 0423b7ae339b34cbd8fbae42a31b2435
-timeCreated: 1508113968
+timeCreated: 1508114248
 licenseType: Free
 TextureImporter:
   fileIDToRecycleName:
@@ -97,10 +97,10 @@ TextureImporter:
       name: GemBlock
       rect:
         serializedVersion: 2
-        x: 10
-        y: 10
-        width: 180
-        height: 180
+        x: 0
+        y: 0
+        width: 200
+        height: 200
       alignment: 1
       pivot: {x: 0, y: 1}
       border: {x: 0, y: 0, z: 0, w: 0}
