@@ -1,13 +1,13 @@
 ﻿public class Point {
-  public int row { get; private set; }
-  public int col { get; private set; }
+  public int Row { get; private set; }
+  public int Col { get; private set; }
 
   public Point(int row, int col) {
-    this.row = row;
-    this.col = col;
+    this.Row = row;
+    this.Col = col;
   }
 
   public override string ToString() {
-    return "[Point] row: " + row + ", col: " + col;
+    return "[Point] row: " + Row + ", col: " + Col;
   }
 }

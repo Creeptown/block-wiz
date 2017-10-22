@@ -1,10 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-// CellGroups move as a unit and render their cells
 public class CellRenderer : MonoBehaviour {
-  public enum State {
+  public enum CellRendererState {
     Preview,    // Showing as upcoming drop
     Spawning,   // Group is about to become Falling
     Falling,    // Group is moving towards target
@@ -15,12 +12,14 @@ public class CellRenderer : MonoBehaviour {
     Dead,       // Destroyed. Can be removed from game
   }
 
+  [Tooltip("Normal Sprite")]
   public Sprite normalSprite;
+  [Tooltip("Bomb Sprite")]
   public Sprite bombSprite;
 
-  internal Vector3 targetPosition;
-  internal State state;
-  internal Cell cell;
+  public Vector3 TargetPosition { get; private set; }
+  public CellRendererState State { get; private set; }
+  public Cell Cell { get; private set; }
 
   SpriteRenderer spriteRenderer;
   int cellSize;
@@ -28,16 +27,16 @@ public class CellRenderer : MonoBehaviour {
 
   void Awake () {
     // TODO Should be Spawning
-    state = State.Falling;
+    State = CellRendererState.Falling;
     gameObject.AddComponent<SpriteRenderer>();
   }
 
   internal void Initialize(Cell cell, int cellSize, int gravity) {
-    this.cell = cell;
+    this.Cell = cell;
     this.cellSize = cellSize;
     this.gravity = gravity;
-    transform.position = GridToWorldSpace(new Point(0, cell.position.col));
-    targetPosition = GridToWorldSpace(cell.position);
+    transform.position = GridToWorldSpace(new Point(0, cell.Position.Col));
+    TargetPosition = GridToWorldSpace(cell.Position);
     Render();
   }
 
@@ -50,25 +49,25 @@ public class CellRenderer : MonoBehaviour {
 
   internal void Render() {
     spriteRenderer = GetComponent<SpriteRenderer>();
-    switch (cell.type) {
-      case Cell.Type.Bomb:
+    switch (Cell.Type) {
+      case CellType.Bomb:
         spriteRenderer.sprite = bombSprite;
         break;
       default:
         spriteRenderer.sprite = normalSprite;
         break;
     }
-    switch (cell.color) {
-      case Cell.Color.Red:
+    switch (Cell.Color) {
+      case CellColor.Red:
         spriteRenderer.color = Color.red;
         break;
-      case Cell.Color.Green:
+      case CellColor.Green:
         spriteRenderer.color = Color.green;
         break;
-      case Cell.Color.Blue:
+      case CellColor.Blue:
         spriteRenderer.color = Color.blue;
         break;
-      case Cell.Color.Yellow:
+      case CellColor.Yellow:
         spriteRenderer.color = Color.yellow;
         break;
       default:
@@ -76,44 +75,44 @@ public class CellRenderer : MonoBehaviour {
         break;
     }
     if (!RenderableGroup()) return;
-    Debug.Log("RENDERING: " + cell.group + "w: " + cell.group.width + "h:" + cell.group.height);
+    Debug.Log("RENDERING: " + Cell.Group + "w: " + Cell.Group.Width + "h:" + Cell.Group.Height);
     spriteRenderer.color = Color.black;
-    transform.localScale = new Vector3(cell.group.width, cell.group.height, 0);
+    transform.localScale = new Vector3(Cell.Group.Width, Cell.Group.Height, 0);
   }
 
   internal void RenderGroup() {
     if (!RenderableGroup()) return;
-    transform.position = targetPosition = GroupCenter();
-    Debug.Log("Rendering Group at " + targetPosition);
+    transform.position = TargetPosition = GroupCenter();
+    Debug.Log("Rendering Group at " + TargetPosition);
     Render();
   }
 
   internal void UpdateTarget() {
     if (RenderableGroup()) {
-      targetPosition = GroupCenter();
-      Debug.Log("Updateing target. pos: " + transform.position + ", target: " + targetPosition);
+      TargetPosition = GroupCenter();
+      Debug.Log("Updateing target. pos: " + transform.position + ", target: " + TargetPosition);
     } else {
-      targetPosition = GridToWorldSpace(cell.position);
+      TargetPosition = GridToWorldSpace(Cell.Position);
     }
 }
 
   Vector3 GroupCenter() {
-    var grp = cell.group;
+    var grp = Cell.Group;
     float x = 0, y = 0;
-    for (int i = grp.col; i < (grp.col + grp.width); i++) x += i * cellSize;
-    for (int j = grp.row; j > (grp.row - grp.height); j--) y += j * cellSize;
-    var ret = new Vector3(x / grp.width, (y / grp.height) * gravity, 0f);
-    Debug.Log("GROUP: col:"+grp.col+", row:"+grp.row+", width: "+grp.width+", height: " + grp.height + " pos: " + ret);
+    for (int i = grp.Column; i < (grp.Column + grp.Width); i++) x += i * cellSize;
+    for (int j = grp.Row; j > (grp.Row - grp.Height); j--) y += j * cellSize;
+    var ret = new Vector3(x / grp.Width, (y / grp.Height) * gravity, 0f);
+    Debug.Log("GROUP: col:"+grp.Column+", row:"+grp.Row+", width: "+grp.Width+", height: " + grp.Height + " pos: " + ret);
     return ret;
   }
 
   // Coverts a grid position (row, column) to world space coordinate (Vector3)
   Vector3 GridToWorldSpace(Point p) {
-    return new Vector3(p.col * cellSize, p.row * cellSize * gravity, 0f);
+    return new Vector3(p.Col * cellSize, p.Row * cellSize * gravity, 0f);
   }
 
   // Cells will be grouped for a time until they are cleaned up by the board
   bool RenderableGroup() {
-    return cell.group != null && cell.group.Cell == cell;
+    return Cell.Group != null && Cell.Group.Cell == Cell;
   }
 }

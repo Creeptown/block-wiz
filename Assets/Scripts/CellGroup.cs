@@ -1,25 +1,30 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
-public class CellGroup {
-  internal Cell Cell { get; private set; }
-  internal Cell.Color Color { get { return Cell.color; } private set { } }
-  // col, width are for the leftmost bottom cell in a group
-  internal int col;
-  internal int row;
-  internal int width = 2;
-  internal int height = 2;
+﻿public class CellGroup {
+  public Cell Cell { get; private set; }
+  public CellColor Color { get { return Cell.Color; } private set { } }
+  public CellType Type { get { return Cell.Type; } private set { } }
+  public int Column { get; set; } // column, width identify the leftmost bottom cell in a group
+  public int Row { get; set; }
+  public int Width { get; set; }
+  public int Height { get; set; }
+  public Point Position { get { return new Point(Row, Column); }  }
 
   public CellGroup(Cell cell, int col, int row) {
     this.Cell = cell;
-    this.col = col;
-    this.row = row;
+    this.Column = col;
+    this.Row = row;
+    this.Width = 2;
+    this.Height = 2;
   }
 
   public CellGroup(Cell cell, Point pos) {
     this.Cell = cell;
-    this.col = pos.col;
-    this.row = pos.row;
+    this.Column = pos.Col;
+    this.Row = pos.Row;
+    this.Width = 2;
+    this.Height = 2;
+  }
+
+  public override string ToString() {
+    return "[CellGroup] Color: " + Color + ", Type:" + Type + " , Width:,"+ Width +" Height:" + Height;
   }
 }

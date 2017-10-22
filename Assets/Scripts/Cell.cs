@@ -1,32 +1,18 @@
 ﻿public class Cell {
-  public enum Type {
-    Normal,
-    Bomb,
-    Counter,
-    Diamond
-  }
+  public CellType Type { get; private set; }
+  public CellColor Color { get; private set; }
+  public bool InGroup { get { return Group != null; } }
+  public int RoundCreated { get; private set; }
+  public CellGroup Group { get; set; }
+  public Point Position { get; set; }
 
-  public enum Color {
-    Red,
-    Green,
-    Blue,
-    Yellow
-  }
-
-  internal Type type;
-  internal Color color;
-  internal CellGroup group;
-  internal Point position;
-  internal int roundCreated;
-  internal bool InGroup { get { return group != null; } }
-
-  public Cell(Color c, Type t, int r) {
-    type = t;
-    color = c;
-    roundCreated = r;
+  public Cell(CellColor c, CellType t, int r) {
+    Type = t;
+    Color = c;
+    RoundCreated = r;
   }
 
   public override string ToString() {
-    return "[Cell] Color: " + color + ", Type:" + type + " , Round Created:" + roundCreated;
+    return "[Cell] Color: " + Color + ", Type:" + Type + " , Round Created:" + RoundCreated;
   }
 }

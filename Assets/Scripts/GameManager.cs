@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Game is responsible for passing information between boards
-// and generating pieces for all boards
+/*
+ * Game is responsible for passing information between boards
+ * and generating pieces for all boards
+ */
 public class GameManager : MonoBehaviour {
   public static GameManager instance = null;
   [Tooltip("Whether Diamonds can spawn during this game")]
@@ -21,7 +23,7 @@ public class GameManager : MonoBehaviour {
 
   List<GameObject> boards = new List<GameObject>();
   List<Cell[]> spawned = new List<Cell[]>();
-  Cell.Type[] spawnableCellTypes = new Cell.Type[2] { Cell.Type.Normal, Cell.Type.Bomb };
+  CellType[] spawnableCellTypes = new CellType[2] { CellType.Normal, CellType.Bomb };
 
   void Awake() {
     if (instance == null) {
@@ -36,7 +38,7 @@ public class GameManager : MonoBehaviour {
 
     for (int i = 0; i < playerCount; i++) {
       var board = Instantiate(boardPrefab, Vector3.zero, Quaternion.identity) as GameObject;
-      board.GetComponent<Board>().gameManager = GetComponent<GameManager>();
+      board.GetComponent<Board>().GameManager = GetComponent<GameManager>();
       boards.Add(board);
     }
   }
@@ -44,13 +46,13 @@ public class GameManager : MonoBehaviour {
   // TODO Probably can do some housekeeping to clear out older round spawns
   public Cell[] RequestCellsForRound(int round) {
     if (spawned.Count > round && spawned[round] != null) return spawned[round];
-    Cell.Color color;
-    Cell.Type type;
+    CellColor color;
+    CellType type;
     var cells = new Cell[size];
 
     for (int i = 0; i < size; i++) {
       type = spawnableCellTypes[Random.Range(0, spawnableCellTypes.Length)];
-      color = (Cell.Color)Random.Range(0, System.Enum.GetValues(typeof(Cell.Color)).Length);
+      color = (CellColor)Random.Range(0, System.Enum.GetValues(typeof(CellColor)).Length);
       cells[i] = new Cell(color, type, round);
     }
 

@@ -6,5 +6,5 @@ public abstract class Controller : MonoBehaviour {
   public enum State {
     Normal,
   }
-  internal Board board;
+  public Board board;
 }

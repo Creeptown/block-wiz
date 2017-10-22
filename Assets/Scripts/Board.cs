@@ -46,8 +46,8 @@ public class Board : MonoBehaviour {
   [Tooltip("Cell Renderer Prefab to use")]
   public GameObject cellRendererPrefab;
 
-  internal GameManager gameManager;
-  internal BoardState State { get; private set; }
+  public GameManager GameManager { get; set; }
+  public BoardState State { get; private set; }
 
   int round = 0; // Current round - independent of other boards
   int score = 0; // Total score for this board
@@ -123,10 +123,10 @@ public class Board : MonoBehaviour {
 
   #region Grid
 
-  // Spawn a random CellGroup in a random column at the start of the board
+  // Spawn a random Cell in a random column at the top of the board
   void SpawnCellGroup() {
-    var col = Random.Range(0, columnCount); // Random.Range on ints is exclusive
-    var cells = gameManager.RequestCellsForRound(round);
+    var col = Random.Range(0, columnCount);
+    var cells = GameManager.RequestCellsForRound(round);
     for (int i = 0; i < cells.Length; i++) {
       if (cellGrid.AddCell(cells[i], col)) {
         CreateRenderer(cells[i], new Point(0, col));
@@ -135,8 +135,9 @@ public class Board : MonoBehaviour {
     Debug.Log(cellGrid.ToString());
   }
 
-  // Returns true if all connections are resolved, false if we're still
-  // resolving
+  // Once all cells are fixed, resolve any connections between bombs and normal
+  // cells until cells are no longer fallings
+  // Returns true if all connections are resolved, false if we're still resolving
   bool Resolve() {
     if (falling.Count > 0) return false;
     var toRemove = new List<GameObject>();
@@ -144,7 +145,7 @@ public class Board : MonoBehaviour {
     cellGrid.DestroyConnected();
 
     alive.ForEach(o => {
-      if (!cellGrid.CellExists(o.GetComponent<CellRenderer>().cell)) toRemove.Add(o);
+      if (!cellGrid.CellExists(o.GetComponent<CellRenderer>().Cell)) toRemove.Add(o);
     });
     toRemove.ForEach(o => {
       alive.Remove(o);
@@ -160,7 +161,7 @@ public class Board : MonoBehaviour {
   // Move all active cell groups according to their current speed to their current targets
   void MoveActive() {
     falling.ForEach(g => {
-      var target = g.GetComponent<CellRenderer>().targetPosition;
+      var target = g.GetComponent<CellRenderer>().TargetPosition;
       g.transform.position = Vector3.MoveTowards(g.transform.position, target, speed * Time.deltaTime);
     });
   }
@@ -172,37 +173,38 @@ public class Board : MonoBehaviour {
     alive.ForEach(obj => {
       renderer = obj.GetComponent<CellRenderer>();
       renderer.UpdateTarget();
-      if (obj.transform.position != renderer.targetPosition) {
+      if (obj.transform.position != renderer.TargetPosition) {
         falling.Add(obj);
       }
     });
   }
 
-  // Removes the CellGroups from the active list if the cell has reached it's target
+  // Removes the CellRenderers from the active list if the cell has reached it's target
   // TODO Need to wait until the state is Landed
   void MakeFixed() {
     var toFixed = new List<GameObject>();
-    falling.ForEach(g => {
-      if (g.transform.position == g.GetComponent<CellRenderer>().targetPosition) {
-        toFixed.Add(g);
+    falling.ForEach(o => {
+      if (o.transform.position == o.GetComponent<CellRenderer>().TargetPosition) {
+        toFixed.Add(o);
       }
     });
     toFixed.ForEach(obj => falling.Remove(obj));
   }
 
   // After we have resolved, we'll need to combine any newly created groups and
-  // remove unused renderers (once cells become part of a group, only the
-  // first cell in the group is responsible for rendering the entire group)
+  // remove unused renderers 
+  // Note: Once cells become part of a group, only the first cell in the group is 
+  // responsible for rendering the entire group
   void Combine() {
     var toRemove = new List<GameObject>();
     var toRender = new List<GameObject>();
     alive.ForEach(o => {
       var r = o.GetComponent<CellRenderer>();
-      if (r.cell.InGroup) {
+      if (r.Cell.InGroup) {
         // If the renderer's cell is in a group, and that group's cell
         // is not the same as the renderer, then this renderer can be removed
         // Or if the group has been removed from the board
-        (r.cell.group.Cell != r.cell || !cellGrid.GroupExists(r.cell.group) ? toRemove : toRender).Add(o);
+        (r.Cell.Group.Cell != r.Cell || !cellGrid.GroupExists(r.Cell.Group) ? toRemove : toRender).Add(o);
       }
     });
     toRemove.ForEach(o => {
@@ -214,7 +216,7 @@ public class Board : MonoBehaviour {
   }
 
   void CreateRenderer(Cell cell, Point p) {
-    var obj = Instantiate(cellRendererPrefab, new Vector3(p.col * cellSize, p.row, 0), Quaternion.identity) as GameObject;
+    var obj = Instantiate(cellRendererPrefab, new Vector3(p.Col * cellSize, p.Row, 0), Quaternion.identity) as GameObject;
     var renderer = obj.GetComponent<CellRenderer>();
     obj.transform.parent = transform;
     renderer.Initialize(cell, cellSize, (int)gravity);

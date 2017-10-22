@@ -30,10 +30,10 @@ public class CellGrid {
   // Cells are always added from the top
   public bool AddCell(Cell cell, int col) {
     var pos = new Point(TargetRow(col, 0), col);
-    if (grid[pos.row, pos.col] == null) {
-      grid[pos.row, pos.col] = cell;
+    if (grid[pos.Row, pos.Col] == null) {
+      grid[pos.Row, pos.Col] = cell;
       cells.Add(cell);
-      cell.position = pos;
+      cell.Position = pos;
       Update();
       return true;
     }
@@ -58,9 +58,9 @@ public class CellGrid {
       // TODO Change to hashset
       if (c != null) {
         cells.Remove(c);
-        grid[c.position.row, c.position.col] = null;
+        grid[c.Position.Row, c.Position.Col] = null;
         if (c.InGroup) {
-          groups.Remove(c.group);
+          groups.Remove(c.Group);
         }
       }
     });
@@ -76,7 +76,7 @@ public class CellGrid {
     for (row = rowCount - 1; row >= 0; row--) {
       for (int col = 0; col < columnCount; col++) {
         cell = grid[row, col];
-        if (cell != null && cell.type == Cell.Type.Bomb) {
+        if (cell != null && cell.Type == CellType.Bomb) {
           var chain = FindConnected(row, col);
           if (chain.Count > 1) {
             connected.AddRange(chain);
@@ -116,24 +116,24 @@ public class CellGrid {
           grid[row, col + 1] != null && // right
           grid[row - 1, col] != null && // top
           grid[row - 1, col + 1] != null && // right+top
-          grid[row, col].color == grid[row, col + 1].color &&
-          grid[row, col].color == grid[row - 1, col].color &&
-          grid[row, col].color == grid[row - 1, col + 1].color &&
+          grid[row, col].Color == grid[row, col + 1].Color &&
+          grid[row, col].Color == grid[row - 1, col].Color &&
+          grid[row, col].Color == grid[row - 1, col + 1].Color &&
           !grid[row, col].InGroup &&
           !grid[row, col + 1].InGroup &&
           !grid[row - 1, col].InGroup &&
           !grid[row - 1, col + 1].InGroup &&
-          grid[row, col].type == Cell.Type.Normal &&
-          grid[row, col + 1].type == Cell.Type.Normal &&
-          grid[row - 1, col].type == Cell.Type.Normal &&
-          grid[row - 1, col + 1].type == Cell.Type.Normal) {
+          grid[row, col].Type == CellType.Normal &&
+          grid[row, col + 1].Type == CellType.Normal &&
+          grid[row - 1, col].Type == CellType.Normal &&
+          grid[row - 1, col + 1].Type == CellType.Normal) {
           group = new CellGroup(grid[row, col], col, row);
           if (groups.Add(group)) {
             // This is finding the bottomLeft
-            grid[row, col].group = group;
-            grid[row, col + 1].group = group;
-            grid[row - 1, col].group = group;
-            grid[row - 1, col + 1].group = group;
+            grid[row, col].Group = group;
+            grid[row, col + 1].Group = group;
+            grid[row - 1, col].Group = group;
+            grid[row - 1, col + 1].Group = group;
             changed = true;
           }
         }
@@ -150,64 +150,64 @@ public class CellGrid {
       bool expandRight = true;
       bool expandLeft = true;
 
-      for (int i = 0; i < grp.width; i++) {
-        if (!CheckValid(grp.row - grp.height, grp.col + i) ||
-          grid[grp.row - grp.height, grp.col + i] == null ||
-          grid[grp.row - grp.height, grp.col + i].color != grp.Color ||
-          grid[grp.row - grp.height, grp.col + i].InGroup ||
-          grid[grp.row - grp.height, grp.col + i].type != Cell.Type.Normal) {
+      for (int i = 0; i < grp.Width; i++) {
+        if (!CheckValid(grp.Row - grp.Height, grp.Column + i) ||
+          grid[grp.Row - grp.Height, grp.Column + i] == null ||
+          grid[grp.Row - grp.Height, grp.Column + i].Color != grp.Color ||
+          grid[grp.Row - grp.Height, grp.Column + i].InGroup ||
+          grid[grp.Row - grp.Height, grp.Column + i].Type != CellType.Normal) {
           expandUp = false;
         }
-        if (!CheckValid(grp.row + 1, grp.col + i) ||
-          grid[grp.row + 1, grp.col + i] == null ||
-          grid[grp.row + 1, grp.col + i].color != grp.Color ||
-          grid[grp.row + 1, grp.col + i].InGroup ||
-          grid[grp.row + 1, grp.col + i].type != Cell.Type.Normal) {
+        if (!CheckValid(grp.Row + 1, grp.Column + i) ||
+          grid[grp.Row + 1, grp.Column + i] == null ||
+          grid[grp.Row + 1, grp.Column + i].Color != grp.Color ||
+          grid[grp.Row + 1, grp.Column + i].InGroup ||
+          grid[grp.Row + 1, grp.Column + i].Type != CellType.Normal) {
           expandDown = false;
         }
       }
       if (expandUp) {
-        for (int i = 0; i < grp.width; i++) {
-          grid[grp.row - grp.height, grp.col + i].group = grp;
+        for (int i = 0; i < grp.Width; i++) {
+          grid[grp.Row - grp.Height, grp.Column + i].Group = grp;
         }
-        grp.height++;
+        grp.Height++;
       }
       if (expandDown) {
-        for (int i = 0; i < grp.width; i++) {
-          grid[grp.row + 1, grp.col + i].group = grp;
+        for (int i = 0; i < grp.Width; i++) {
+          grid[grp.Row + 1, grp.Column + i].Group = grp;
         }
-        grp.row++;
-        grp.height++;
+        grp.Row++;
+        grp.Height++;
       }
 
-      for (int i = 0; i < grp.height; i++) {
-        if (!CheckValid(grp.row - i, grp.col + grp.width) ||
-          grid[grp.row - i, grp.col + grp.width] == null ||
-          grid[grp.row - i, grp.col + grp.width].color != grp.Color ||
-          grid[grp.row - i, grp.col + grp.width].InGroup ||
-          grid[grp.row - i, grp.col + grp.width].type != Cell.Type.Normal) {
+      for (int i = 0; i < grp.Height; i++) {
+        if (!CheckValid(grp.Row - i, grp.Column + grp.Width) ||
+          grid[grp.Row - i, grp.Column + grp.Width] == null ||
+          grid[grp.Row - i, grp.Column + grp.Width].Color != grp.Color ||
+          grid[grp.Row - i, grp.Column + grp.Width].InGroup ||
+          grid[grp.Row - i, grp.Column + grp.Width].Type != CellType.Normal) {
           expandRight = false;
         }
-        if (!CheckValid(grp.row - i, grp.col - 1) ||
-          grid[grp.row - i, grp.col - 1] == null ||
-          grid[grp.row - i, grp.col - 1].color != grp.Color ||
-          grid[grp.row - i, grp.col - 1].InGroup ||
-          grid[grp.row - i, grp.col - 1].type != Cell.Type.Normal) {
+        if (!CheckValid(grp.Row - i, grp.Column - 1) ||
+          grid[grp.Row - i, grp.Column - 1] == null ||
+          grid[grp.Row - i, grp.Column - 1].Color != grp.Color ||
+          grid[grp.Row - i, grp.Column - 1].InGroup ||
+          grid[grp.Row - i, grp.Column - 1].Type != CellType.Normal) {
           expandLeft = false;
         }
       }
       if (expandRight) {
-        for (int i = 0; i < grp.height; i++) {
-          grid[grp.row - i, grp.col + grp.width].group = grp;
+        for (int i = 0; i < grp.Height; i++) {
+          grid[grp.Row - i, grp.Column + grp.Width].Group = grp;
         }
-        grp.width++;
+        grp.Width++;
       }
       if (expandLeft) {
-        for (int i = 0; i < grp.height; i++) {
-          grid[grp.row - i, grp.col - 1].group = grp;
+        for (int i = 0; i < grp.Height; i++) {
+          grid[grp.Row - i, grp.Column - 1].Group = grp;
         }
-        grp.col--;
-        grp.width++;
+        grp.Column--;
+        grp.Width++;
       }
       changed = expandUp || expandDown || expandLeft || expandRight;
     }
@@ -219,13 +219,13 @@ public class CellGrid {
     List<CellGroup> toRemove = new List<CellGroup>();
     foreach (CellGroup g1 in groups) {
       foreach (CellGroup g2 in groups) {
-        if (g1.Color == g2.Color && g1.col == g2.col && g1.row - g1.height == g2.row && g1.width == g2.width) {
+        if (g1.Color == g2.Color && g1.Column == g2.Column && g1.Row - g1.Height == g2.Row && g1.Width == g2.Width) {
           toRemove.Add(g2);
-          g1.height += g2.height;
+          g1.Height += g2.Height;
         }
-        if (g1.Color == g2.Color && g1.row == g2.row && g1.col + g1.width == g2.col && g1.height == g2.height && g1.Color == g2.Color) {
+        if (g1.Color == g2.Color && g1.Row == g2.Row && g1.Column + g1.Width == g2.Column && g1.Height == g2.Height && g1.Color == g2.Color) {
           toRemove.Add(g2);
-          g1.width += g2.width;
+          g1.Width += g2.Width;
         }
       }
     }
@@ -256,7 +256,7 @@ public class CellGrid {
       for (int row = rowCount - 2; row > 0; row--) {
         c = grid[row, col];
         if (c == null) continue;
-        if (c.group != null) {
+        if (c.Group != null) {
           UpdateCellGroupPosition(c, col, row);
         } else {
           UpdateCellPosition(c, col, row);
@@ -267,30 +267,26 @@ public class CellGrid {
 
   void UpdateCellPosition(Cell c, int col, int row) {
     Point pos = new Point(TargetRow(col, row), col);
-    if (pos.row > -1 && pos != c.position) {
+    if (pos.Row > -1 && pos != c.Position) {
       grid[row, col] = null;
-      grid[pos.row, pos.col] = c;
-      c.position = pos;
+      grid[pos.Row, pos.Col] = c;
+      c.Position = pos;
     }
   }
 
   // Find the the highest point of contact and use that for
   // every cell in the group
   void UpdateCellGroupPosition(Cell c, int col, int row) {
-    var grp = c.group;
-    int[] cols = new int[grp.width];
-    for (int i = 0; i < grp.width; i++) cols[i] = grp.col + i;
-
-    Array.Sort(cols);
-
-    if (cols[cols.Length -1] >= columnCount)
-      Debug.Log("c width: " + c.group.width + "grp col:" + grp.col + ", col: "+cols[cols.Length-1]+", row: " + row + ", cols length:" + cols.Length);
+    var grp = c.Group;
+    int[] cols = new int[grp.Width];
+    for (int i = 0; i < grp.Width; i++) cols[i] = grp.Column + i;
 
     Point pos = new Point(HighestTargetRow(cols, row), col);
-    if (pos != c.position && pos.row > -1 && pos.col > -1) {
+
+    if (pos != c.Position && pos.Row > -1 && pos.Col > -1) {
       grid[row, col] = null;
-      grid[pos.row, pos.col] = c;
-      c.position = pos;
+      grid[pos.Row, pos.Col] = c;
+      c.Position = pos;
     }
   }
 
@@ -308,7 +304,7 @@ public class CellGrid {
       KeyValuePair<int, int> point = queue.Dequeue();
       var cell = grid[point.Value, point.Key];
 
-      if (cell == null || (cell.color != initial.color))
+      if (cell == null || (cell.Color != initial.Color))
         continue;
 
       if (alreadySeen[point.Value, point.Key])
@@ -331,7 +327,7 @@ public class CellGrid {
     if (col < 0 || col >= array.GetLength(1) || row < 0 || row >= array.GetLength(0)) return;
 
     var cell = array[row, col];
-    if (cell != null && cell.type != Cell.Type.Counter && cell.color == initial.color) {
+    if (cell != null && cell.Type != CellType.Counter && cell.Color == initial.Color) {
       queue.Enqueue(new KeyValuePair<int, int>(col, row));
     }
   }
