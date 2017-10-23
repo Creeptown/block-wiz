@@ -82,7 +82,7 @@ public class Board : MonoBehaviour {
           if (pendingCounter) {
             State = BoardState.Countering;
           } else {
-            SpawnCellGroup();
+            SpawnPlayerCells();
             State = BoardState.Playing;
           }
           break;
@@ -123,13 +123,13 @@ public class Board : MonoBehaviour {
 
   #region Grid
 
-  // Spawn a random Cell in a random column at the top of the board
-  void SpawnCellGroup() {
+  // Spawns a column of Cells in a random column at the top of the board
+  void SpawnPlayerCells() {
     var col = Random.Range(0, columnCount);
     var cells = GameManager.RequestCellsForRound(round);
     for (int i = 0; i < cells.Length; i++) {
       if (cellGrid.AddCell(cells[i], col)) {
-        CreateRenderer(cells[i], new Point(0, col));
+        CreateRenderer(cells[i], new Point(i*((int)gravity * -1), col));
       }
     }
     Debug.Log(cellGrid.ToString());
@@ -222,7 +222,8 @@ public class Board : MonoBehaviour {
   }
 
   void CreateRenderer(Cell cell, Point p) {
-    var obj = Instantiate(cellRendererPrefab, new Vector3(p.Col * cellSize, p.Row, 0), Quaternion.identity) as GameObject;
+    var pos = new Vector3(p.Col * cellSize, p.Row * cellSize, 0);
+    var obj = Instantiate(cellRendererPrefab, pos, Quaternion.identity) as GameObject;
     var renderer = obj.GetComponent<CellRenderer>();
     obj.transform.parent = transform;
     renderer.Initialize(cell, cellSize, (int)gravity);
@@ -254,7 +255,6 @@ public class Board : MonoBehaviour {
       // Preflight test - check if the neighbooring cell is empty
       cells = falling.ConvertAll(o => o.GetComponent<CellRenderer>().Cell);
       canMove = falling.TrueForAll(o => {
-        var cell = o.GetComponent<CellRenderer>().Cell;
         var pos = WorldToGrid(o);
         var col = pos.Col + dir;
         return col >= 0 && col < columnCount && cellGrid.CellAt(pos.Row, col) == null;

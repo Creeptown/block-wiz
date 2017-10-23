@@ -31,11 +31,11 @@ public class CellRenderer : MonoBehaviour {
     gameObject.AddComponent<SpriteRenderer>();
   }
 
+  // Set the target position and render the cell based on its properties
   internal void Initialize(Cell cell, int cellSize, int gravity) {
     this.Cell = cell;
     this.cellSize = cellSize;
     this.gravity = gravity;
-    transform.position = GridToWorldSpace(new Point(0, cell.Position.Col));
     TargetPosition = GridToWorldSpace(cell.Position);
     Render();
   }
