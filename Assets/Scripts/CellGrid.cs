@@ -29,12 +29,11 @@ public class CellGrid {
 
   // Cells are always added from the top
   public bool AddCell(Cell cell, int col) {
-    var pos = new Point(TargetRow(col, 0), col);
+    var pos = new Point(TargetRow(col), col);
     if (grid[pos.Row, pos.Col] == null) {
       grid[pos.Row, pos.Col] = cell;
       cells.Add(cell);
       cell.Position = pos;
-      Update();
       return true;
     }
     return false;
@@ -52,6 +51,13 @@ public class CellGrid {
     return groups.Contains(grp);
   }
 
+  public void OnFixed() {
+    UpdateCellPositions();
+    Detect2x2();
+    ExpandCellGroups();
+    CombineCellGroups();
+  }
+
   public void DestroyConnected() {
     CellsToDestroy().ForEach(c => {
       // Needed in case it gets destroyed in a prev loop
@@ -64,11 +70,48 @@ public class CellGrid {
         }
       }
     });
-    Update();
   }
 
+  #region movement
+  public bool ShiftCellsLeft(List<Cell> cells) {
+    return MoveCellsHorizontally(cells, -1);
+  }
+
+  public bool ShiftCellsRight(List<Cell> cells) {
+    return MoveCellsHorizontally(cells, 1);
+  }
+
+  bool MoveCellsHorizontally(List<Cell> cells, int dir) {
+    bool canMove = cells.All(c => {
+      var col = c.Position.Col + dir;
+      return CheckValid(TargetRow(col), col);
+    });
+
+    if (canMove) {
+      cells.ForEach(c => {
+        var col = c.Position.Col + dir;
+        var pos = new Point(TargetRow(col), col);
+        grid[c.Position.Row, c.Position.Col] = null;
+        grid[pos.Row, pos.Col] = c;
+        c.Position = pos;
+      });
+    } 
+
+    return canMove;
+  }
+
+  public bool RotateCellsClockwise(List<Cell> cells, int row) {
+    return true;
+  }
+
+  public bool RotateCellsCounterClockwise(List<Cell> cells, int row) {
+    return true;
+  }
+
+  #endregion movement
+
   // Find all the connected cells we can currently destroy
-  // TODOD Currently possible to add dupes here
+  // TODO Currently possible to add dupes here
   List<Cell> CellsToDestroy() {
     int row;
     Cell cell;
@@ -88,9 +131,9 @@ public class CellGrid {
   }
 
   // Given a column and starting row determines the next open row
-  int TargetRow(int col, int row) {
+  int TargetRow(int col, int row = 0) {
     for (int i = rowCount - 1; i > row; i--) {
-      if (i >= rowCount || col >= columnCount) Debug.Log("col: "+col+", row:" + i);
+      if (i >= rowCount || col >= columnCount) Debug.Log("Invalid TargetRow col: "+col+", row:" + i);
       if (grid[i, col] == null) return i;
     }
     return -1;
@@ -98,7 +141,7 @@ public class CellGrid {
 
   // Given a column and starting row determines the highest open row
   // in a series of columns. Used for determing the position of cells within a group
-  int HighestTargetRow(int[] cols, int row) {
+  int TargetRowForColumns(int[] cols, int row) {
     var rows = new int[cols.Length];
     for (int i = 0; i < cols.Length; i++) {
       rows[i] = TargetRow(cols[i], row);
@@ -240,13 +283,6 @@ public class CellGrid {
     return (col >= 0 && col < columnCount && row >= 0 && row < rowCount);
   }
 
-  void Update() {
-    UpdateCellPositions();
-    Detect2x2();
-    ExpandCellGroups();
-    CombineCellGroups();
-  }
-
   // Iterate over all the cells and determine if we can move a cell
   // down the grid
   void UpdateCellPositions() {
@@ -281,7 +317,7 @@ public class CellGrid {
     int[] cols = new int[grp.Width];
     for (int i = 0; i < grp.Width; i++) cols[i] = grp.Column + i;
 
-    Point pos = new Point(HighestTargetRow(cols, row), col);
+    Point pos = new Point(TargetRowForColumns(cols, row), col);
 
     if (pos != c.Position && pos.Row > -1 && pos.Col > -1) {
       grid[row, col] = null;

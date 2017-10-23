@@ -147,6 +147,7 @@ public class Board : MonoBehaviour {
     alive.ForEach(o => {
       if (!cellGrid.CellExists(o.GetComponent<CellRenderer>().Cell)) toRemove.Add(o);
     });
+
     toRemove.ForEach(o => {
       alive.Remove(o);
       falling.Remove(o);
@@ -155,7 +156,11 @@ public class Board : MonoBehaviour {
 
     MakeFalling();
 
-    return falling.Count == 0;
+    if (falling.Count == 0) {
+      cellGrid.OnFixed();
+      return true;
+    }
+    return false;
   }
 
   // Move all active cell groups according to their current speed to their current targets
@@ -189,6 +194,7 @@ public class Board : MonoBehaviour {
       }
     });
     toFixed.ForEach(obj => falling.Remove(obj));
+    if (falling.Count == 0) cellGrid.OnFixed();
   }
 
   // After we have resolved, we'll need to combine any newly created groups and
@@ -227,6 +233,7 @@ public class Board : MonoBehaviour {
   #endregion Grid
 
   #region Control
+  // Note: If the state is Playing then any falling pieces by nature are player controllable
 
   internal WaitForSeconds Drop(bool dropping) {
     if (State == BoardState.Playing) {
@@ -235,9 +242,31 @@ public class Board : MonoBehaviour {
     return new WaitForSeconds(0);
   }
 
-  internal WaitForSeconds MoveHorizontal(float dir) {
+  // Starting from the lowest cell determine if each cell is capable of
+  // being shifted horizontally based on it's current row and colujn. 
+  // If true, update the grid and then update the renderer
+  internal WaitForSeconds MoveHorizontal(float delta) {
     bool canMove = false;
+    int dir = delta < 0 ? -1 : 1;
+    List<Cell> cells;
+
     if (State == BoardState.Playing) {
+      // Preflight test - check if the neighbooring cell is empty
+      cells = falling.ConvertAll(o => o.GetComponent<CellRenderer>().Cell);
+      canMove = falling.TrueForAll(o => {
+        var cell = o.GetComponent<CellRenderer>().Cell;
+        var pos = WorldToGrid(o);
+        var col = pos.Col + dir;
+        return col >= 0 && col < columnCount && cellGrid.CellAt(pos.Row, col) == null;
+      });
+      if (canMove && (dir < 0 ? cellGrid.ShiftCellsLeft(cells) : cellGrid.ShiftCellsRight(cells))) {
+        falling.ForEach(o => {
+          var renderer = o.GetComponent<CellRenderer>();
+          var pos = o.transform.position;
+          o.transform.position = new Vector3(pos.x + (cellSize * dir), pos.y);
+          renderer.UpdateTarget();
+        });
+      }
     }
     return new WaitForSeconds(dir != 0f && canMove ? horizontalMoveDelay : 0f);
   }
@@ -246,6 +275,14 @@ public class Board : MonoBehaviour {
     if (State == BoardState.Playing) {
     }
     return new WaitForSeconds(0);
+  }
+
+  Point WorldToGrid(GameObject o) {
+    var pos = o.transform.position;
+    int col = ((int)pos.x / cellSize);
+    int row = Mathf.FloorToInt(pos.y / cellSize) * (int)gravity;
+    //Debug.Log("World to Grid Space: (x: "+pos.x+",y:"+pos.y+" ) to (row: "+row+", col: "+col+")");
+    return new Point(row, col);
   }
 
   #endregion Control
