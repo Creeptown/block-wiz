@@ -40,6 +40,14 @@ public class CellGrid {
     return false;
   }
 
+  public bool IsEmpty(Point p) {
+    return IsEmpty(p.Row, p.Col);
+  }
+
+  public bool IsEmpty(int row, int col) {
+    return CheckValid(row, col) && CellAt(row, col) == null;
+  }
+
   public Cell CellAt(int row, int col) {
     return grid[row, col];
   }
@@ -71,6 +79,7 @@ public class CellGrid {
         }
       }
     });
+    OnFixed();
   }
 
   #region movement
@@ -101,12 +110,11 @@ public class CellGrid {
     return canMove;
   }
 
-  public bool RotateCellsClockwise(List<Cell> cells, int row) {
-    return true;
-  }
-
-  public bool RotateCellsCounterClockwise(List<Cell> cells, int row) {
-    return true;
+  public void SetRow(Cell c, int col) {
+    var pos = new Point(TargetRow(col), col);
+    grid[c.Position.Row, c.Position.Col] = null;
+    grid[pos.Row, pos.Col] = c;
+    c.Position = pos;
   }
 
   #endregion movement
@@ -375,7 +383,7 @@ public class CellGrid {
     for (int j = 0; j < rowCount; j++) {
       for (int i = 0; i < columnCount; i++) {
         cell = grid[j, i];
-        ret += cell == null ? "_" : (cell.InGroup ? "g" : "x");
+        ret += cell == null ? "_" : (cell.InGroup ? "g" : (cell.Type == CellType.Bomb ? "b" : "n"));
       }
       ret += System.Environment.NewLine;
     }

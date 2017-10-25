@@ -39,8 +39,10 @@ public class Board : MonoBehaviour {
   public float fallSpeed = 50f;
   [Tooltip("Length in seconds cells can touch before they become fixed")]
   public float touchTime = 0.2f;
+  [Tooltip("Time to wait between rotations")]
+  public float rotationDelay = 0.1f;
   [Tooltip("Time to wait between horizontal moves")]
-  public float horizontalMoveDelay = 0.2f;
+  public float moveDelay = 0.2f;
   [Tooltip("Direction CellGroups should move")]
   public Gravity gravity = Gravity.Down;
   [Tooltip("Cell Renderer Prefab to use")]
@@ -156,11 +158,7 @@ public class Board : MonoBehaviour {
 
     MakeFalling();
 
-    if (falling.Count == 0) {
-      cellGrid.OnFixed();
-      return true;
-    }
-    return false;
+    return falling.Count == 0;
   }
 
   // Move all active cell groups according to their current speed to their current targets
@@ -254,10 +252,10 @@ public class Board : MonoBehaviour {
     if (State == BoardState.Playing) {
       // Preflight test - check if the neighbooring cell is empty
       cells = falling.ConvertAll(o => o.GetComponent<CellRenderer>().Cell);
+      // TODO Should be in the CellGrid class
       canMove = falling.TrueForAll(o => {
         var pos = WorldToGrid(o);
-        var col = pos.Col + dir;
-        return col >= 0 && col < columnCount && cellGrid.CellAt(pos.Row, col) == null;
+        return cellGrid.IsEmpty(pos.Row, pos.Col + dir);
       });
       if (canMove && (dir < 0 ? cellGrid.ShiftCellsLeft(cells) : cellGrid.ShiftCellsRight(cells))) {
         falling.ForEach(o => {
@@ -268,21 +266,86 @@ public class Board : MonoBehaviour {
         });
       }
     }
-    return new WaitForSeconds(dir != 0f && canMove ? horizontalMoveDelay : 0f);
+    return new WaitForSeconds(dir != 0f && canMove ? moveDelay : 0f);
   }
 
-  internal WaitForSeconds Rotate(int dir) {
-    if (State == BoardState.Playing) {
+  // The first block is always the rotating lever, the second block is the pivot
+  // Note this is only designed to work with a 2-block piece
+
+  // TO FIX
+  // Don't calculte column, get it from the grid and increment directly, row
+  // can be off a bit as it's moving, but column must be exact
+  internal WaitForSeconds Rotate(int rotation) {
+    if (State != BoardState.Playing || falling.Count < 2) return new WaitForSeconds(0f);
+    int translate = 0;
+    bool clockwise = rotation < 0;
+    GameObject lever = falling[0],
+               pivot = falling[1];
+    Cell leverCell = lever.GetComponent<CellRenderer>().Cell,
+         pivotCell = pivot.GetComponent<CellRenderer>().Cell;
+    Point leverInGrid = new Point(WorldYtoGridRow(lever), leverCell.Position.Col),
+          pivotInGrid = new Point(WorldYtoGridRow(pivot), pivotCell.Position.Col);
+    Vector3 pivotPos = pivot.transform.position,
+            leverPos = lever.transform.position;
+    bool onBottom = leverInGrid.Row > pivotInGrid.Row, 
+         onLeft = leverInGrid.Col < pivotInGrid.Col;
+
+    // Update lever grid position
+    leverInGrid = leverInGrid.Col == pivotInGrid.Col
+      ? new Point(pivotInGrid.Row, pivotInGrid.Col + (clockwise && onBottom || !clockwise && !onBottom ? -1 : 1)) // Currently vertically aligned -> same row, diff col
+      : new Point(pivotInGrid.Row + (clockwise && onLeft ? -1 : 1), pivotInGrid.Col); // Currently horizontally aligned -> diff row, same col
+
+    // Attempt to translate piece if we've rotated into an invalid cell (i.e. wallkick)
+    if (!cellGrid.IsEmpty(leverInGrid)) {
+      // determine if blocked on the left or right
+      translate = leverInGrid.Col < pivotInGrid.Col ? 1 : -1;
     }
-    return new WaitForSeconds(0);
+
+    // We don't actually need to get a point, just the order (if vertical) and the row
+    leverInGrid = new Point(leverInGrid.Row, leverInGrid.Col + translate);
+    pivotInGrid = new Point(pivotInGrid.Row, pivotInGrid.Col + translate);
+
+    if (cellGrid.IsEmpty(leverInGrid) && cellGrid.IsEmpty(pivotInGrid)) {
+      // Order matters, set the grid position of the lowest cell first
+      if (WorldYtoGridRow(lever) > WorldYtoGridRow(pivot)) {
+        cellGrid.SetRow(leverCell, leverInGrid.Col);
+        cellGrid.SetRow(pivotCell, pivotInGrid.Col);
+      } else {
+        cellGrid.SetRow(pivotCell, pivotInGrid.Col);
+        cellGrid.SetRow(leverCell, leverInGrid.Col);
+      }
+
+      // Rotate, translate renderer
+      var dir = leverPos - pivotPos; // get point direction relative to pivot
+      dir = Quaternion.Euler(0, 0, rotation) * dir; // rotate it
+      var rotatedPos = dir + pivotPos; // calculate rotated point
+      var offsetX = cellSize * translate;
+
+      lever.transform.position = new Vector3(rotatedPos.x + offsetX , rotatedPos.y, 0);
+      pivot.transform.position = new Vector3(pivotPos.x + offsetX, pivotPos.y, 0);
+
+      falling.ForEach(o => {
+        var renderer = o.GetComponent<CellRenderer>();
+        renderer.UpdateTarget();
+      });
+      Debug.Log(cellGrid.ToString());
+      return new WaitForSeconds(0);
+    } 
+
+    return new WaitForSeconds(0f);
   }
 
   Point WorldToGrid(GameObject o) {
     var pos = o.transform.position;
-    int col = ((int)pos.x / cellSize);
-    int row = Mathf.FloorToInt(pos.y / cellSize) * (int)gravity;
-    //Debug.Log("World to Grid Space: (x: "+pos.x+",y:"+pos.y+" ) to (row: "+row+", col: "+col+")");
+    int col = Mathf.FloorToInt(pos.x / (float)cellSize);
+    int row = Mathf.FloorToInt(pos.y / (float)cellSize) * (int)gravity;
+    Debug.Log("World to Grid Space: (x: " + pos.x + ",y:" + pos.y + " ) to (row: " + row + ", col: " + col + ")");
     return new Point(row, col);
+  }
+
+  int WorldYtoGridRow(GameObject o) {
+    var pos = o.transform.position;
+    return Mathf.FloorToInt(pos.y / (float)cellSize) * (int)gravity;
   }
 
   #endregion Control
