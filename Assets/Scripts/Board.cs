@@ -258,8 +258,8 @@ public class Board : MonoBehaviour {
       cells = falling.ConvertAll(o => o.GetComponent<CellRenderer>().Cell);
       // TODO Should be in the CellGrid class
       canMove = falling.TrueForAll(o => {
-        var pos = WorldToGrid(o);
-        return cellGrid.IsEmpty(pos.Row, pos.Col + dir);
+        var row = WorldYtoGridRow(o);
+        return cellGrid.IsEmpty(row, o.GetComponent<CellRenderer>().Cell.Position.Col + dir);
       });
       if (canMove && (dir < 0 ? cellGrid.ShiftCellsLeft(cells) : cellGrid.ShiftCellsRight(cells))) {
         falling.ForEach(o => {
@@ -275,10 +275,6 @@ public class Board : MonoBehaviour {
 
   // The first block is always the rotating lever, the second block is the pivot
   // Note this is only designed to work with a 2-block piece
-
-  // TO FIX
-  // Don't calculte column, get it from the grid and increment directly, row
-  // can be off a bit as it's moving, but column must be exact
   internal WaitForSeconds Rotate(int rotation) {
     if (State != BoardState.Playing || falling.Count < 2) return new WaitForSeconds(0f);
     int translate = 0;
@@ -332,20 +328,21 @@ public class Board : MonoBehaviour {
         var renderer = o.GetComponent<CellRenderer>();
         renderer.UpdateTarget();
       });
-      Debug.Log(cellGrid.ToString());
+
       return new WaitForSeconds(0);
     } 
 
     return new WaitForSeconds(0f);
   }
 
-  Point WorldToGrid(GameObject o) {
-    var pos = o.transform.position;
-    int col = Mathf.FloorToInt(pos.x / (float)cellSize);
-    int row = Mathf.FloorToInt(pos.y / (float)cellSize) * (int)gravity;
-    //Debug.Log("World to Grid Space: (x: " + pos.x + ",y:" + pos.y + " ) to (row: " + row + ", col: " + col + ")");
-    return new Point(row, col);
-  }
+  // This is somewhat unreliable for the column due to rounding errors
+  //Point WorldToGrid(GameObject o) {
+  //  var pos = o.transform.position;
+  //  int col = Mathf.FloorToInt(pos.x / (float)cellSize);
+  //  int row = Mathf.FloorToInt(pos.y / (float)cellSize) * (int)gravity;
+  //  //Debug.Log("World to Grid Space: (x: " + pos.x + ",y:" + pos.y + " ) to (row: " + row + ", col: " + col + ")");
+  //  return new Point(row, col);
+  //}
 
   int WorldYtoGridRow(GameObject o) {
     var pos = o.transform.position;
