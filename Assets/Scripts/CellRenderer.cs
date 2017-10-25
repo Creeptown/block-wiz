@@ -74,23 +74,23 @@ public class CellRenderer : MonoBehaviour {
         spriteRenderer.color = Color.black;
         break;
     }
-    if (!RenderableGroup()) return;
-    Debug.Log("RENDERING: " + Cell.Group + "w: " + Cell.Group.Width + "h:" + Cell.Group.Height);
-    spriteRenderer.color = Color.black;
-    transform.localScale = new Vector3(Cell.Group.Width, Cell.Group.Height, 0);
+
+    if (RenderableGroup()) {
+      transform.localScale = new Vector3(Cell.Group.Width, Cell.Group.Height, 0);
+    }
   }
 
   internal void RenderGroup() {
     if (!RenderableGroup()) return;
     transform.position = TargetPosition = GroupCenter();
-    Debug.Log("Rendering Group at " + TargetPosition);
+    //Debug.Log("Rendering Group at " + TargetPosition);
     Render();
   }
 
   internal void UpdateTarget() {
     if (RenderableGroup()) {
       TargetPosition = GroupCenter();
-      Debug.Log("Updateing target. pos: " + transform.position + ", target: " + TargetPosition);
+      //Debug.Log("Updateing target. pos: " + transform.position + ", target: " + TargetPosition);
     } else {
       TargetPosition = GridToWorldSpace(Cell.Position);
     }
@@ -102,7 +102,7 @@ public class CellRenderer : MonoBehaviour {
     for (int i = grp.Column; i < (grp.Column + grp.Width); i++) x += i * cellSize;
     for (int j = grp.Row; j > (grp.Row - grp.Height); j--) y += j * cellSize;
     var ret = new Vector3(x / grp.Width, (y / grp.Height) * gravity, 0f);
-    Debug.Log("GROUP: col:"+grp.Column+", row:"+grp.Row+", width: "+grp.Width+", height: " + grp.Height + " pos: " + ret);
+    //Debug.Log("GROUP: col:"+grp.Column+", row:"+grp.Row+", width: "+grp.Width+", height: " + grp.Height + " pos: " + ret);
     return ret;
   }
 

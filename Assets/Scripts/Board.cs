@@ -158,7 +158,11 @@ public class Board : MonoBehaviour {
 
     MakeFalling();
 
-    return falling.Count == 0;
+    if (falling.Count == 0) {
+      cellGrid.OnFixed();
+      return true;
+    }
+    return false;
   }
 
   // Move all active cell groups according to their current speed to their current targets
@@ -339,7 +343,7 @@ public class Board : MonoBehaviour {
     var pos = o.transform.position;
     int col = Mathf.FloorToInt(pos.x / (float)cellSize);
     int row = Mathf.FloorToInt(pos.y / (float)cellSize) * (int)gravity;
-    Debug.Log("World to Grid Space: (x: " + pos.x + ",y:" + pos.y + " ) to (row: " + row + ", col: " + col + ")");
+    //Debug.Log("World to Grid Space: (x: " + pos.x + ",y:" + pos.y + " ) to (row: " + row + ", col: " + col + ")");
     return new Point(row, col);
   }
 

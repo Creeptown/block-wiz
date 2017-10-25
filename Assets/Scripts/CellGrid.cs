@@ -34,7 +34,6 @@ public class CellGrid {
       grid[pos.Row, pos.Col] = cell;
       cells.Add(cell);
       cell.Position = pos;
-      //Debug.Log("Added Cell with target" + pos);
       return true;
     }
     return false;
@@ -297,7 +296,7 @@ public class CellGrid {
   void UpdateCellPositions() {
     Cell c;
 
-    for (int col = 0; col < columnCount - 1; col++) {
+    for (int col = 0; col < columnCount; col++) {
       for (int row = rowCount - 2; row > 0; row--) {
         c = grid[row, col];
         if (c == null) continue;
