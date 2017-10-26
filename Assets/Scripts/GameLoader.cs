@@ -11,8 +11,12 @@ public class GameLoader : MonoBehaviour {
     if (GameManager.instance == null) {
       gameManager = Instantiate(gameManager);
 
-      if (settings != null) {
-        gameManager.GetComponent<GameManager>().playerCount = settings.numPlayers;
+      if (GameManager.instance == null) {
+        Instantiate(gameManager);
+
+        // TODO: somehow after the above line, this still doesn't have an instance
+        GameManager.instance.playerCount = settings.numPlayers;
+
         Debug.Log("Loading game with " + settings.numPlayers + " players");
       }
     }
