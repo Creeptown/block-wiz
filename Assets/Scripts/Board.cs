@@ -158,11 +158,7 @@ public class Board : MonoBehaviour {
 
     MakeFalling();
 
-    if (falling.Count == 0) {
-      cellGrid.OnFixed();
-      return true;
-    }
-    return false;
+    return falling.Count == 0;
   }
 
   // Move all active cell groups according to their current speed to their current targets
@@ -256,11 +252,12 @@ public class Board : MonoBehaviour {
     if (State == BoardState.Playing) {
       // Preflight test - check if the neighbooring cell is empty
       cells = falling.ConvertAll(o => o.GetComponent<CellRenderer>().Cell);
-      // TODO Should be in the CellGrid class
+
       canMove = falling.TrueForAll(o => {
         var row = WorldYtoGridRow(o);
         return cellGrid.IsEmpty(row, o.GetComponent<CellRenderer>().Cell.Position.Col + dir);
       });
+
       if (canMove && (dir < 0 ? cellGrid.ShiftCellsLeft(cells) : cellGrid.ShiftCellsRight(cells))) {
         falling.ForEach(o => {
           var renderer = o.GetComponent<CellRenderer>();
@@ -329,7 +326,7 @@ public class Board : MonoBehaviour {
         renderer.UpdateTarget();
       });
 
-      return new WaitForSeconds(0);
+      return new WaitForSeconds(rotationDelay);
     } 
 
     return new WaitForSeconds(0f);
