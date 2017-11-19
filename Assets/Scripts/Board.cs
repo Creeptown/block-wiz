@@ -21,9 +21,9 @@ public class Board : MonoBehaviour {
 
   // TODO Should be set by GameManager
   [Tooltip("X position of the board (in world units)")]
-  public float x = 0;
+  public float xPosition = 0;
   [Tooltip("Y position of the board (in world units)")]
-  public float y = 0;
+  public float yPosition = 0;
   [Tooltip("Total columns that make up the board")]
   public int columnCount = 6;
   [Tooltip("Total rows that make up the board")]
@@ -71,7 +71,7 @@ public class Board : MonoBehaviour {
   void Awake() {
     State = BoardState.RoundStart;
     var pos = transform.position;
-    transform.position = new Vector3(pos.x + x, pos.y + y);
+    transform.position = new Vector3(xPosition, yPosition);
     gameObject.AddComponent<SpriteRenderer>();
     spriteRenderer = GetComponent<SpriteRenderer>();
     spriteRenderer.sprite = backgroundSprite;

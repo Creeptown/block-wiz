@@ -16,6 +16,10 @@ public class CellRenderer : MonoBehaviour {
   public Sprite normalSprite;
   [Tooltip("Bomb Sprite")]
   public Sprite bombSprite;
+  public Color red;
+  public Color blue;
+  public Color green;
+  public Color yellow;
 
   public Vector3 TargetPosition { get; private set; }
   public CellRendererState State { get; private set; }
@@ -58,16 +62,16 @@ public class CellRenderer : MonoBehaviour {
     }
     switch (Cell.Color) {
       case CellColor.Red:
-        spriteRenderer.color = Color.red;
+        spriteRenderer.color = red;
         break;
       case CellColor.Green:
-        spriteRenderer.color = Color.green;
+        spriteRenderer.color = green;
         break;
       case CellColor.Blue:
-        spriteRenderer.color = Color.blue;
+        spriteRenderer.color = blue;
         break;
       case CellColor.Yellow:
-        spriteRenderer.color = Color.yellow;
+        spriteRenderer.color = yellow;
         break;
       default:
         spriteRenderer.color = Color.black;
