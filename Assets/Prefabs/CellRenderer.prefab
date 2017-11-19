@@ -51,5 +51,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2b3af34d8f2adb419f82fd7750c2337, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  normalSprite: {fileID: 21300000, guid: 4a2ef9688d5f42c468b4e75564577439, type: 3}
-  bombSprite: {fileID: 21300000, guid: 8a41b4721bcc59c40bf7917964bd6e59, type: 3}
+  normalSprite: {fileID: 21300000, guid: 5077f015a4188774e9f625eca974c106, type: 3}
+  bombSprite: {fileID: 21300000, guid: 6f8919023f69da54d81603299a731678, type: 3}
+  red: {r: 1, g: 0, b: 1, a: 1}
+  blue: {r: 0, g: 1, b: 1, a: 1}
+  green: {r: 0, g: 1, b: 0, a: 1}
+  yellow: {r: 1, g: 1, b: 0, a: 1}

@@ -12,8 +12,8 @@ public class GameManager : MonoBehaviour {
   [Tooltip("Random seed for generating cell sequence. Leave at zero to generate")]
   public static int seed = 0;
   [Tooltip("Number of cells to use when generating the player's piece")]
-  public int size = 2;
-  [Tooltip("Number of players in this game")]
+  public int pieceCount = 2;
+  [Tooltip("Number of players in this game"), Range(1,4)]
   public int playerCount = 1;
   [Tooltip("Extra space between boards")]
   public int boardPadding = 10;
@@ -47,9 +47,9 @@ public class GameManager : MonoBehaviour {
     if (spawned.Count > round && spawned[round] != null) return spawned[round];
     CellColor color;
     CellType type;
-    var cells = new Cell[size];
+    var cells = new Cell[pieceCount];
 
-    for (int i = 0; i < size; i++) {
+    for (int i = 0; i < pieceCount; i++) {
       type = spawnableCellTypes[Random.Range(0, spawnableCellTypes.Length)];
       color = (CellColor)Random.Range(0, System.Enum.GetValues(typeof(CellColor)).Length);
       cells[i] = new Cell(color, type, round);

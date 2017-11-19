@@ -58,6 +58,8 @@ public class Board : MonoBehaviour {
   public GameManager GameManager { get; set; }
   public BoardState State { get; private set; }
 
+  internal float zOffset = -0.1f;
+
   int round = 0; // Current round - independent of other boards
   int score = 0; // Total score for this board
   List<int> clearedThisRound; // Track each gem clear separately to tally combos
@@ -241,7 +243,7 @@ public class Board : MonoBehaviour {
   }
 
   void CreateRenderer(Cell cell, Point p) {
-    // TODO Should be in the render's Init method
+    // TODO Probably should be in the renderer's Init method
     var pos = GridToWorldSpace(p);
     var obj = Instantiate(cellRendererPrefab, pos, Quaternion.identity) as GameObject;
     var renderer = obj.GetComponent<CellRenderer>();
@@ -252,15 +254,19 @@ public class Board : MonoBehaviour {
     falling.Add(obj);
   }
 
-  // Coverts a grid position (row, column) to world space coordinate (Vector3)
   internal Vector3 GridToWorldSpace(Point p) {
-    var row = gravity == Gravity.Down ? rowCount - (p.Row + 1) : p.Row;
-    var pixelUnits = ((cellSize + cellPadding) / (float)PPU);
-    var parentWidth = (columnCount - 1) * pixelUnits;
-    var parentHeight = (rowCount - 1) * pixelUnits;
-    var x = (transform.position.x - parentWidth / 2) + (p.Col * pixelUnits);
-    var y = (transform.position.y - parentHeight / 2) + (row * pixelUnits);
-    return new Vector3(x, y, -0.1f);
+    return GridToWorldSpace(p.Row, p.Col);
+  }
+
+  // Coverts a grid position (row, column) to world space coordinate (Vector3)
+  internal Vector3 GridToWorldSpace(float row, float col) {
+    row = gravity == Gravity.Down ? rowCount - (row + 1) : row;
+    var gridUnits = ((cellSize + cellPadding) / (float)PPU);
+    var parentWidth = (columnCount - 1) * gridUnits;
+    var parentHeight = (rowCount - 1) * gridUnits;
+    var x = (transform.position.x - parentWidth / 2) + (col * gridUnits);
+    var y = (transform.position.y - parentHeight / 2) + (row * gridUnits);
+    return new Vector3(x, y, zOffset);
   }
 
   // This is somewhat unreliable for the column due to float rounding errors

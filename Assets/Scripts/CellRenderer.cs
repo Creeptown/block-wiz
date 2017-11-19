@@ -25,7 +25,6 @@ public class CellRenderer : MonoBehaviour {
   public CellRendererState State { get; private set; }
   public Cell Cell { get; private set; }
 
-  float zOffset = -0.1f;
   SpriteRenderer spriteRenderer;
   Board board;
 
@@ -99,13 +98,13 @@ public class CellRenderer : MonoBehaviour {
     }
 }
 
-  // TODO This is now wrong
   Vector3 GroupCenter() {
     var grp = Cell.Group;
-    float x = 0, y = 0;
-    for (int i = grp.Column; i < (grp.Column + grp.Width); i++) x += i * board.cellSize;
-    for (int j = grp.Row; j > (grp.Row - grp.Height); j--) y += j * board.cellSize;
-    var ret = new Vector3(x / grp.Width, (y / grp.Height) * (int)board.gravity, zOffset);
+    var x = 0f;
+    var y = 0f;
+    for (int i = grp.Column; i < (grp.Column + grp.Width); i++) x += i;
+    for (int j = grp.Row; j > (grp.Row - grp.Height); j--) y += j;
+    var ret = board.GridToWorldSpace(y / grp.Height, x / grp.Width);
     //Debug.Log("GROUP: col:"+grp.Column+", row:"+grp.Row+", width: "+grp.Width+", height: " + grp.Height + " pos: " + ret);
     return ret;
   }
