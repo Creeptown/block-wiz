@@ -141,11 +141,20 @@ public class Board : MonoBehaviour {
     var col = Random.Range(0, columnCount);
     var cells = GameManager.RequestCellsForRound(round);
 
-    for (int i = cells.Length - 1; i > -1; i--) {
-      if (cellGrid.AddCell(cells[i], col)) {
-        CreateRenderer(cells[i], new Point(i*((int)gravity * -1), col));
+    if (gravity == Gravity.Up) {
+      for (int i = 0; i < cells.Length; i++) {
+        if (cellGrid.AddCell(cells[i], col)) {
+          CreateRenderer(cells[i], new Point(i * ((int)gravity * -1), col));
+        }
+      }
+    } else {
+      for (int i = cells.Length - 1; i > -1; i--) {
+        if (cellGrid.AddCell(cells[i], col)) {
+          CreateRenderer(cells[i], new Point(i * ((int)gravity * -1), col));
+        }
       }
     }
+
     Debug.Log(cellGrid.ToString());
   }
 
@@ -233,9 +242,7 @@ public class Board : MonoBehaviour {
 
   void CreateRenderer(Cell cell, Point p) {
     // TODO Should be in the render's Init method
-    // Right now it's incremented by a full unit which != pixels
     var pos = GridToWorldSpace(p);
-    //var pos = new Vector3(transform.position.x + (p.Col * 0.6f), transform.position.y + (p.Row * 0.6f), -0.1f);
     var obj = Instantiate(cellRendererPrefab, pos, Quaternion.identity) as GameObject;
     var renderer = obj.GetComponent<CellRenderer>();
 
@@ -247,12 +254,13 @@ public class Board : MonoBehaviour {
 
   // Coverts a grid position (row, column) to world space coordinate (Vector3)
   internal Vector3 GridToWorldSpace(Point p) {
+    var row = gravity == Gravity.Down ? rowCount - (p.Row + 1) : p.Row;
     var pixelUnits = ((cellSize + cellPadding) / (float)PPU);
     var parentWidth = (columnCount - 1) * pixelUnits;
     var parentHeight = (rowCount - 1) * pixelUnits;
     var x = (transform.position.x - parentWidth / 2) + (p.Col * pixelUnits);
-    var y = (transform.position.y - parentHeight / 2) + (p.Row * pixelUnits);
-    return new Vector3(x, y * (int)gravity, -0.1f);
+    var y = (transform.position.y - parentHeight / 2) + (row * pixelUnits);
+    return new Vector3(x, y, -0.1f);
   }
 
   // This is somewhat unreliable for the column due to float rounding errors
