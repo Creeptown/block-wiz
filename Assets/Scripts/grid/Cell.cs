@@ -6,10 +6,10 @@
   public CellGroup Group { get; set; }
   public Point Position { get; set; }
 
-  public Cell(CellColor c, CellType t, int r) {
-    Type = t;
-    Color = c;
-    RoundCreated = r;
+  public Cell(CellSpawn spawn) {
+    Type = spawn.Type;
+    Color = spawn.Color;
+    RoundCreated = spawn.RoundCreated;
   }
 
   public override string ToString() {

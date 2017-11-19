@@ -19,21 +19,14 @@ public class Board : MonoBehaviour {
     Lost,       // Player has lost
   }
 
-  // TODO Should be set by GameManager
-  [Tooltip("X position of the board (in world units)")]
-  public float xPosition = 0;
-  [Tooltip("Y position of the board (in world units)")]
-  public float yPosition = 0;
   [Tooltip("Total columns that make up the board")]
   public int columnCount = 6;
   [Tooltip("Total rows that make up the board")]
   public int rowCount = 12;
-  [Tooltip("Width/Height of an individual cell")]
+  [Tooltip("Pixel dimensions of an individual cell")]
   public int cellSize = 20;
   [Tooltip("Space between cells")]
   public int cellPadding = 2;
-  [Tooltip("Pixels Per Unit")]
-  public int PPU = 100;
   [Tooltip("Column that CellGroups spawn from (currently ignored)")]
   public int startColumn = 4;
   [Tooltip("Speed in which cellgroup drops normally")]
@@ -58,8 +51,6 @@ public class Board : MonoBehaviour {
   public GameManager GameManager { get; set; }
   public BoardState State { get; private set; }
 
-  internal float zOffset = -0.1f;
-
   int round = 0; // Current round - independent of other boards
   int score = 0; // Total score for this board
   List<int> clearedThisRound; // Track each gem clear separately to tally combos
@@ -72,20 +63,18 @@ public class Board : MonoBehaviour {
 
   void Awake() {
     State = BoardState.RoundStart;
-    var pos = transform.position;
-    transform.position = new Vector3(xPosition, yPosition);
     gameObject.AddComponent<SpriteRenderer>();
     spriteRenderer = GetComponent<SpriteRenderer>();
     spriteRenderer.sprite = backgroundSprite;
   }
 
 	void Start() {
-    InitializeBoard();
+    InitializeGrid();
     speed = normalSpeed;
     StartCoroutine("Fall");
   }
 	
-  void InitializeBoard() {
+  void InitializeGrid() {
     cellGrid = new CellGrid(rowCount, columnCount);
   }
 
@@ -145,19 +134,15 @@ public class Board : MonoBehaviour {
 
     if (gravity == Gravity.Up) {
       for (int i = 0; i < cells.Length; i++) {
-        if (cellGrid.AddCell(cells[i], col)) {
-          CreateRenderer(cells[i], new Point(i * ((int)gravity * -1), col));
-        }
+        CreateRenderer(cells[i], new Point(i * ((int)gravity * -1), col));
       }
     } else {
       for (int i = cells.Length - 1; i > -1; i--) {
-        if (cellGrid.AddCell(cells[i], col)) {
-          CreateRenderer(cells[i], new Point(i * ((int)gravity * -1), col));
-        }
+        CreateRenderer(cells[i], new Point(i * ((int)gravity * -1), col));
       }
     }
 
-    Debug.Log(cellGrid.ToString());
+    //Debug.Log(cellGrid.ToString());
   }
 
   // Once all cells are fixed, resolve any connections between bombs and normal
@@ -242,11 +227,14 @@ public class Board : MonoBehaviour {
     toRender.ForEach(o => o.GetComponent<CellRenderer>().RenderGroup());
   }
 
-  void CreateRenderer(Cell cell, Point p) {
+  void CreateRenderer(CellSpawn spawn, Point p) {
     // TODO Probably should be in the renderer's Init method
     var pos = GridToWorldSpace(p);
     var obj = Instantiate(cellRendererPrefab, pos, Quaternion.identity) as GameObject;
     var renderer = obj.GetComponent<CellRenderer>();
+    var cell = new Cell(spawn);
+
+    cellGrid.AddCell(cell, p.Col);
 
     obj.transform.parent = transform;
     renderer.Initialize(cell, this);
@@ -261,12 +249,12 @@ public class Board : MonoBehaviour {
   // Coverts a grid position (row, column) to world space coordinate (Vector3)
   internal Vector3 GridToWorldSpace(float row, float col) {
     row = gravity == Gravity.Down ? rowCount - (row + 1) : row;
-    var gridUnits = ((cellSize + cellPadding) / (float)PPU);
+    var gridUnits = ((cellSize + cellPadding) / (float)GameManager.PPU);
     var parentWidth = (columnCount - 1) * gridUnits;
     var parentHeight = (rowCount - 1) * gridUnits;
     var x = (transform.position.x - parentWidth / 2) + (col * gridUnits);
     var y = (transform.position.y - parentHeight / 2) + (row * gridUnits);
-    return new Vector3(x, y, zOffset);
+    return new Vector3(x, y, transform.position.z + GameManager.zOffset);
   }
 
   // This is somewhat unreliable for the column due to float rounding errors

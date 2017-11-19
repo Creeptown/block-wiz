@@ -63,13 +63,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 948b2db301cbfd44eb6e0f846941f26b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  xPosition: 0
-  yPosition: 0
   columnCount: 6
   rowCount: 12
   cellSize: 60
   cellPadding: 2
-  PPU: 100
   startColumn: 4
   normalSpeed: 5
   dropSpeed: 10
