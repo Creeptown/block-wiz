@@ -21,9 +21,9 @@ public class CellRenderer : MonoBehaviour {
   public CellRendererState State { get; private set; }
   public Cell Cell { get; private set; }
 
+  float zOffset = -0.1f;
   SpriteRenderer spriteRenderer;
-  int cellSize;
-  int gravity;
+  Board board;
 
   void Awake () {
     // TODO Should be Spawning
@@ -32,11 +32,10 @@ public class CellRenderer : MonoBehaviour {
   }
 
   // Set the target position and render the cell based on its properties
-  internal void Initialize(Cell cell, int cellSize, int gravity) {
+  internal void Initialize(Cell cell, Board board) {
     this.Cell = cell;
-    this.cellSize = cellSize;
-    this.gravity = gravity;
-    TargetPosition = GridToWorldSpace(cell.Position);
+    this.board = board;
+    TargetPosition = board.GridToWorldSpace(cell.Position);
     Render();
   }
 
@@ -92,23 +91,19 @@ public class CellRenderer : MonoBehaviour {
       TargetPosition = GroupCenter();
       //Debug.Log("Updateing target. pos: " + transform.position + ", target: " + TargetPosition);
     } else {
-      TargetPosition = GridToWorldSpace(Cell.Position);
+      TargetPosition = board.GridToWorldSpace(Cell.Position);
     }
 }
 
+  // TODO This is now wrong
   Vector3 GroupCenter() {
     var grp = Cell.Group;
     float x = 0, y = 0;
-    for (int i = grp.Column; i < (grp.Column + grp.Width); i++) x += i * cellSize;
-    for (int j = grp.Row; j > (grp.Row - grp.Height); j--) y += j * cellSize;
-    var ret = new Vector3(x / grp.Width, (y / grp.Height) * gravity, 0f);
+    for (int i = grp.Column; i < (grp.Column + grp.Width); i++) x += i * board.cellSize;
+    for (int j = grp.Row; j > (grp.Row - grp.Height); j--) y += j * board.cellSize;
+    var ret = new Vector3(x / grp.Width, (y / grp.Height) * (int)board.gravity, zOffset);
     //Debug.Log("GROUP: col:"+grp.Column+", row:"+grp.Row+", width: "+grp.Width+", height: " + grp.Height + " pos: " + ret);
     return ret;
-  }
-
-  // Coverts a grid position (row, column) to world space coordinate (Vector3)
-  Vector3 GridToWorldSpace(Point p) {
-    return new Vector3(p.Col * cellSize, p.Row * cellSize * gravity, 0f);
   }
 
   // Cells will be grouped for a time until they are cleaned up by the board

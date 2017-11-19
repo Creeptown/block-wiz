@@ -30,7 +30,7 @@ public class CellGrid {
   // Cells are always added from the top
   public bool AddCell(Cell cell, int col) {
     var pos = new Point(TargetRow(col), col);
-    if (grid[pos.Row, pos.Col] == null) {
+    if (pos.Row > -1 && grid[pos.Row, pos.Col] == null) {
       grid[pos.Row, pos.Col] = cell;
       cells.Add(cell);
       cell.Position = pos;

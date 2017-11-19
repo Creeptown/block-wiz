@@ -52,7 +52,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89d70fce38b428e4c82d88d4156535cf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  board: {fileID: 0}
 --- !u!114 &114903779022456184
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -79,3 +78,4 @@ MonoBehaviour:
   gravity: -1
   cellRendererPrefab: {fileID: 1207795821424438, guid: c40bdc9a1ae101642a6e7fccdafa26ac,
     type: 2}
+  backgroundSprite: {fileID: 21300000, guid: 5ab4f01c8a96f40b98a82fd446dc9085, type: 3}

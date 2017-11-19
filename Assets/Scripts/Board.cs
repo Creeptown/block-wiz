@@ -19,17 +19,22 @@ public class Board : MonoBehaviour {
     Lost,       // Player has lost
   }
 
-  [Tooltip("Top edge of the board")]
-  public float top = 0;
-  [Tooltip("Left edge of the board")]
-  public float left = 0;
+  // TODO Should be set by GameManager
+  [Tooltip("X position of the board (in world units)")]
+  public float x = 0;
+  [Tooltip("Y position of the board (in world units)")]
+  public float y = 0;
   [Tooltip("Total columns that make up the board")]
   public int columnCount = 6;
   [Tooltip("Total rows that make up the board")]
   public int rowCount = 12;
   [Tooltip("Width/Height of an individual cell")]
   public int cellSize = 20;
-  [Tooltip("Column that CellGroups spawn from")]
+  [Tooltip("Space between cells")]
+  public int cellPadding = 2;
+  [Tooltip("Pixels Per Unit")]
+  public int PPU = 100;
+  [Tooltip("Column that CellGroups spawn from (currently ignored)")]
   public int startColumn = 4;
   [Tooltip("Speed in which cellgroup drops normally")]
   public float normalSpeed = 20f;
@@ -47,6 +52,8 @@ public class Board : MonoBehaviour {
   public Gravity gravity = Gravity.Down;
   [Tooltip("Cell Renderer Prefab to use")]
   public GameObject cellRendererPrefab;
+  [Tooltip("Background Sprite")]
+  public Sprite backgroundSprite;
 
   public GameManager GameManager { get; set; }
   public BoardState State { get; private set; }
@@ -59,11 +66,15 @@ public class Board : MonoBehaviour {
   List<GameObject> alive = new List<GameObject>(); // All cells
   CellGrid cellGrid;
   bool pendingCounter = false; // Whether or not we need drop counters
+  SpriteRenderer spriteRenderer;
 
   void Awake() {
     State = BoardState.RoundStart;
     var pos = transform.position;
-    transform.position = new Vector3(pos.x + left, pos.y + top);
+    transform.position = new Vector3(pos.x + x, pos.y + y);
+    gameObject.AddComponent<SpriteRenderer>();
+    spriteRenderer = GetComponent<SpriteRenderer>();
+    spriteRenderer.sprite = backgroundSprite;
   }
 
 	void Start() {
@@ -129,7 +140,8 @@ public class Board : MonoBehaviour {
   void SpawnPlayerCells() {
     var col = Random.Range(0, columnCount);
     var cells = GameManager.RequestCellsForRound(round);
-    for (int i = 0; i < cells.Length; i++) {
+
+    for (int i = cells.Length - 1; i > -1; i--) {
       if (cellGrid.AddCell(cells[i], col)) {
         CreateRenderer(cells[i], new Point(i*((int)gravity * -1), col));
       }
@@ -220,13 +232,41 @@ public class Board : MonoBehaviour {
   }
 
   void CreateRenderer(Cell cell, Point p) {
-    var pos = new Vector3(p.Col * cellSize, p.Row * cellSize, 0);
+    // TODO Should be in the render's Init method
+    // Right now it's incremented by a full unit which != pixels
+    var pos = GridToWorldSpace(p);
+    //var pos = new Vector3(transform.position.x + (p.Col * 0.6f), transform.position.y + (p.Row * 0.6f), -0.1f);
     var obj = Instantiate(cellRendererPrefab, pos, Quaternion.identity) as GameObject;
     var renderer = obj.GetComponent<CellRenderer>();
+
     obj.transform.parent = transform;
-    renderer.Initialize(cell, cellSize, (int)gravity);
+    renderer.Initialize(cell, this);
     alive.Add(obj);
     falling.Add(obj);
+  }
+
+  // Coverts a grid position (row, column) to world space coordinate (Vector3)
+  internal Vector3 GridToWorldSpace(Point p) {
+    var pixelUnits = ((cellSize + cellPadding) / (float)PPU);
+    var parentWidth = (columnCount - 1) * pixelUnits;
+    var parentHeight = (rowCount - 1) * pixelUnits;
+    var x = (transform.position.x - parentWidth / 2) + (p.Col * pixelUnits);
+    var y = (transform.position.y - parentHeight / 2) + (p.Row * pixelUnits);
+    return new Vector3(x, y * (int)gravity, -0.1f);
+  }
+
+  // This is somewhat unreliable for the column due to float rounding errors
+  //Point WorldToGrid(GameObject o) {
+  //  var pos = o.transform.position;
+  //  int col = Mathf.FloorToInt(pos.x / (float)cellSize);
+  //  int row = Mathf.FloorToInt(pos.y / (float)cellSize) * (int)gravity;
+  //  //Debug.Log("World to Grid Space: (x: " + pos.x + ",y:" + pos.y + " ) to (row: " + row + ", col: " + col + ")");
+  //  return new Point(row, col);
+  //}
+
+  int WorldYtoGridRow(GameObject o) {
+    var pos = o.transform.position;
+    return Mathf.FloorToInt(pos.y / (float)cellSize) * (int)gravity;
   }
 
   #endregion Grid
@@ -330,20 +370,6 @@ public class Board : MonoBehaviour {
     } 
 
     return new WaitForSeconds(0f);
-  }
-
-  // This is somewhat unreliable for the column due to rounding errors
-  //Point WorldToGrid(GameObject o) {
-  //  var pos = o.transform.position;
-  //  int col = Mathf.FloorToInt(pos.x / (float)cellSize);
-  //  int row = Mathf.FloorToInt(pos.y / (float)cellSize) * (int)gravity;
-  //  //Debug.Log("World to Grid Space: (x: " + pos.x + ",y:" + pos.y + " ) to (row: " + row + ", col: " + col + ")");
-  //  return new Point(row, col);
-  //}
-
-  int WorldYtoGridRow(GameObject o) {
-    var pos = o.transform.position;
-    return Mathf.FloorToInt(pos.y / (float)cellSize) * (int)gravity;
   }
 
   #endregion Control
