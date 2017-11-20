@@ -55,7 +55,7 @@ public class GameManager : MonoBehaviour {
       var board = Instantiate(boardPrefab, pos, Quaternion.identity) as GameObject;
       var boardComponent = board.GetComponent<Board>();
       boardComponent.GameManager = GetComponent<GameManager>();
-      boardComponent.BoardIndex = i;
+      boardComponent.boardIndex = i;
       boards.Add(boardComponent);
       pos.x += space;
     }

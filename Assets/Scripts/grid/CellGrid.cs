@@ -18,8 +18,8 @@ public class CellGrid {
   Cell[,] grid;
   HashSet<CellGroup> groups = new HashSet<CellGroup>(new CellGroupEqualityComparer());
   HashSet<Cell> cells = new HashSet<Cell>();
-  int columnCount;
-  int rowCount;
+  readonly int columnCount;
+  readonly int rowCount;
 
   public CellGrid(int row, int col) {
     rowCount = row;
