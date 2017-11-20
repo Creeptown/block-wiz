@@ -22,7 +22,7 @@ public class GameManager : MonoBehaviour {
   [Tooltip("Board Prefab to use")]
   public GameObject boardPrefab;
 
-  List<GameObject> boards = new List<GameObject>();
+  List<Board> boards = new List<Board>();
   List<CellSpawn[]> spawned = new List<CellSpawn[]>();
   CellType[] spawnableCellTypes = new CellType[2] { CellType.Normal, CellType.Bomb };
 
@@ -38,6 +38,7 @@ public class GameManager : MonoBehaviour {
     DontDestroyOnLoad(gameObject);
     DistributeBoards();
   }
+
   void DistributeBoards() {
     // Get width of screen
     Vector3 leftBottom = Camera.main.ViewportToWorldPoint(Vector3.zero);
@@ -52,9 +53,18 @@ public class GameManager : MonoBehaviour {
 
     for (int i = 0; i < playerCount; i++) {
       var board = Instantiate(boardPrefab, pos, Quaternion.identity) as GameObject;
-      board.GetComponent<Board>().GameManager = GetComponent<GameManager>();
-      boards.Add(board);
+      var boardComponent = board.GetComponent<Board>();
+      boardComponent.GameManager = GetComponent<GameManager>();
+      boardComponent.BoardIndex = i;
+      boards.Add(boardComponent);
       pos.x += space;
+    }
+  }
+
+  public void Attack(int[] boardIndexes, List<CellSpawn> cellsToDrop) {
+    for (int i = 0; i < boardIndexes.Length; i++) {
+      var board = boards[i];
+      board.ReceiveAttack(cellsToDrop);
     }
   }
 

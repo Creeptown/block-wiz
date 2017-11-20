@@ -50,6 +50,7 @@ public class Board : MonoBehaviour {
 
   public GameManager GameManager { get; set; }
   public BoardState State { get; private set; }
+  public int BoardIndex = -1;
 
   int round = 0; // Current round - independent of other boards
   int score = 0; // Total score for this board
@@ -58,7 +59,7 @@ public class Board : MonoBehaviour {
   List<GameObject> falling = new List<GameObject>(); // Currently falling cells
   List<GameObject> alive = new List<GameObject>(); // All cells
   CellGrid cellGrid;
-  bool pendingCounter = false; // Whether or not we need drop counters
+  List<CellSpawn> pendingCounter = new List<CellSpawn>(); // Whether or not we have pending counters to drop
   SpriteRenderer spriteRenderer;
 
   void Awake() {
@@ -83,7 +84,7 @@ public class Board : MonoBehaviour {
     while (State != BoardState.Inactive && State != BoardState.Won && State != BoardState.Lost) {
       switch (State) {
         case BoardState.RoundStart:
-          if (pendingCounter) {
+          if (pendingCounter.Count > 0) {
             State = BoardState.Countering;
           } else {
             SpawnPlayerCells();
@@ -92,6 +93,8 @@ public class Board : MonoBehaviour {
           break;
         case BoardState.Countering:
           State = BoardState.Playing;
+          // Do counter - basically just add a bunch of counter gems to the falling list
+          pendingCounter.Clear();
           break;
         case BoardState.Playing:
           MakeFixed();
@@ -248,7 +251,7 @@ public class Board : MonoBehaviour {
   // Coverts a grid position (row, column) to world space coordinate (Vector3)
   internal Vector3 GridToWorldSpace(float row, float col) {
     row = gravity == Gravity.Down ? rowCount - (row + 1) : row;
-    var gridUnits = ((cellSize + cellPadding) / (float)GameManager.PPU);
+    var gridUnits = GridToWorldUnit();
     var parentWidth = (columnCount - 1) * gridUnits;
     var parentHeight = (rowCount - 1) * gridUnits;
     var x = (transform.position.x - parentWidth / 2) + (col * gridUnits);
@@ -256,9 +259,13 @@ public class Board : MonoBehaviour {
     return new Vector3(x, y, transform.position.z + GameManager.zOffset);
   }
 
+  internal float GridToWorldUnit() {
+    return ((cellSize + cellPadding) / (float)GameManager.PPU);
+  }
+
   int WorldYtoGridRow(GameObject o) {
     var pos = o.transform.position;
-    return Mathf.FloorToInt(pos.y / (float)cellSize) * (int)gravity;
+    return Mathf.FloorToInt(pos.y / GridToWorldUnit()) * (int)gravity;
   }
 
   #endregion Grid
@@ -294,11 +301,12 @@ public class Board : MonoBehaviour {
         falling.ForEach(o => {
           var renderer = o.GetComponent<CellRenderer>();
           var pos = o.transform.position;
-          o.transform.position = new Vector3(pos.x + (cellSize * dir), pos.y);
+          o.transform.position = new Vector3(pos.x + (GridToWorldUnit() * dir), pos.y);
           renderer.UpdateTarget();
         });
       }
     }
+
     return new WaitForSeconds(dir != 0f && canMove ? moveDelay : 0f);
   }
 
@@ -350,7 +358,7 @@ public class Board : MonoBehaviour {
       var dir = leverPos - pivotPos; // get point direction relative to pivot
       dir = Quaternion.Euler(0, 0, rotation) * dir; // rotate it
       var rotatedPos = dir + pivotPos; // calculate rotated point
-      var offsetX = cellSize * translate;
+      var offsetX = GridToWorldUnit() * translate;
 
       lever.transform.position = new Vector3(rotatedPos.x + offsetX , rotatedPos.y, 0);
       pivot.transform.position = new Vector3(pivotPos.x + offsetX, pivotPos.y, 0);
@@ -368,11 +376,18 @@ public class Board : MonoBehaviour {
 
   #endregion Control
 
-  #region Scoring
+  #region Scoring and Countering
+  public void SendAttack() {
+    //GameManager.Attack()
+  }
+
+  public void ReceiveAttack(List<CellSpawn> cellsToSpawn) {
+    pendingCounter = cellsToSpawn;
+  }
 
   int ScoreRound() {
     return Scoring.Score();
   }
 
-  #endregion Scoring
+  #endregion Scoring and Countering
 }
