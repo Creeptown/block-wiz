@@ -134,11 +134,11 @@ public class Board : MonoBehaviour {
 
     if (gravity == Gravity.Up) {
       for (int i = 0; i < cells.Length; i++) {
-        CreateRenderer(cells[i], new Point(i * ((int)gravity * -1), col));
+        CreateRenderer(cells[i], i * ((int)gravity * -1), col);
       }
     } else {
       for (int i = cells.Length - 1; i > -1; i--) {
-        CreateRenderer(cells[i], new Point(i * ((int)gravity * -1), col));
+        CreateRenderer(cells[i], i * ((int)gravity * -1), col);
       }
     }
 
@@ -227,14 +227,19 @@ public class Board : MonoBehaviour {
     toRender.ForEach(o => o.GetComponent<CellRenderer>().RenderGroup());
   }
 
-  void CreateRenderer(CellSpawn spawn, Point p) {
-    var pos = GridToWorldSpace(p);
+  void CreateRenderer(CellSpawn spawn, int row, int col) {
+    var cell = new Cell(spawn);
+
+    // If we can't add any more cells we've reached the game over state
+    if (!cellGrid.AddCell(cell, col)) {
+      State = BoardState.Lost;
+      return;
+    }
+    
+    var pos = GridToWorldSpace(row, col);
     // TODO Probably should be in the renderer's Init method
     var obj = Instantiate(cellRendererPrefab, pos, Quaternion.identity) as GameObject;
     var renderer = obj.GetComponent<CellRenderer>();
-    var cell = new Cell(spawn);
-
-    cellGrid.AddCell(cell, p.Col);
 
     obj.transform.parent = transform;
     renderer.Initialize(cell, this);
@@ -318,21 +323,23 @@ public class Board : MonoBehaviour {
     if (State != BoardState.Playing || falling.Count < 2) return new WaitForSeconds(0f);
     int translate = 0;
     bool clockwise = rotation < 0;
-    GameObject lever = falling[0],
-               pivot = falling[1];
-    Cell leverCell = lever.GetComponent<CellRenderer>().Cell,
-         pivotCell = pivot.GetComponent<CellRenderer>().Cell;
-    Point leverInGrid = new Point(WorldYtoGridRow(lever), leverCell.Position.Col),
-          pivotInGrid = new Point(WorldYtoGridRow(pivot), pivotCell.Position.Col);
-    Vector3 pivotPos = pivot.transform.position,
-            leverPos = lever.transform.position;
-    bool onBottom = leverInGrid.Row > pivotInGrid.Row, 
-         onLeft = leverInGrid.Col < pivotInGrid.Col;
+    GameObject lever = falling[0];
+    GameObject pivot = falling[1];
+    Cell leverCell = lever.GetComponent<CellRenderer>().Cell;
+    Cell pivotCell = pivot.GetComponent<CellRenderer>().Cell;
+    Point leverInGrid = new Point(WorldYtoGridRow(lever), leverCell.Position.Col);
+    Point pivotInGrid = new Point(WorldYtoGridRow(pivot), pivotCell.Position.Col);
+    Vector3 pivotPos = pivot.transform.position;
+    Vector3 leverPos = lever.transform.position;
+    bool onBottom = leverInGrid.Row > pivotInGrid.Row;
+    bool onLeft = leverInGrid.Col < pivotInGrid.Col;
 
     // Update lever grid position
     leverInGrid = leverInGrid.Col == pivotInGrid.Col
-      ? new Point(pivotInGrid.Row, pivotInGrid.Col + (clockwise && onBottom || !clockwise && !onBottom ? -1 : 1)) // Currently vertically aligned -> same row, diff col
-      : new Point(pivotInGrid.Row + (clockwise && onLeft ? -1 : 1), pivotInGrid.Col); // Currently horizontally aligned -> diff row, same col
+      // Currently vertically aligned -> same row, diff col
+      ? new Point(pivotInGrid.Row, pivotInGrid.Col + (clockwise && onBottom || !clockwise && !onBottom ? -1 : 1))
+      // Currently horizontally aligned -> diff row, same col
+      : new Point(pivotInGrid.Row + (clockwise && onLeft ? -1 : 1), pivotInGrid.Col);
 
     // Attempt to translate piece if we've rotated into an invalid cell (i.e. wallkick)
     if (!cellGrid.IsEmpty(leverInGrid)) {

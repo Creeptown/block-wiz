@@ -35,7 +35,7 @@ public class CellGrid {
       cells.Add(cell);
       cell.Position = pos;
       return true;
-    }
+    } 
     return false;
   }
 
@@ -140,7 +140,7 @@ public class CellGrid {
 
   // Given a column and starting row determines the next open row
   int TargetRow(int col, int row = 0) {
-    for (int i = rowCount - 1; i > row; i--) {
+    for (int i = rowCount - 1; i > row - 1; i--) {
       if (i >= rowCount || col >= columnCount) Debug.Log("Invalid TargetRow col: "+col+", row:" + i);
       if (grid[i, col] == null) return i;
     }

@@ -13,6 +13,6 @@
   }
 
   public override string ToString() {
-    return "[Cell] Color: " + Color + ", Type:" + Type + " , Round Created:" + RoundCreated;
+    return "[Cell] Color: " + Color + ", Type:" + Type + " , Position: " + Position +", Round Created:" + RoundCreated;
   }
 }
