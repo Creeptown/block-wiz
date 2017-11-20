@@ -228,8 +228,8 @@ public class Board : MonoBehaviour {
   }
 
   void CreateRenderer(CellSpawn spawn, Point p) {
-    // TODO Probably should be in the renderer's Init method
     var pos = GridToWorldSpace(p);
+    // TODO Probably should be in the renderer's Init method
     var obj = Instantiate(cellRendererPrefab, pos, Quaternion.identity) as GameObject;
     var renderer = obj.GetComponent<CellRenderer>();
     var cell = new Cell(spawn);
@@ -274,8 +274,8 @@ public class Board : MonoBehaviour {
   #endregion Grid
 
   #region Control
+  
   // Note: If the state is Playing then any falling pieces by nature are player controllable
-
   internal WaitForSeconds Drop(bool dropping) {
     if (State == BoardState.Playing) {
       speed = dropping ? dropSpeed : normalSpeed;
