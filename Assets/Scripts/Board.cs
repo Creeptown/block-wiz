@@ -132,14 +132,8 @@ public class Board : MonoBehaviour {
     var col = Random.Range(0, columnCount);
     var cells = GameManager.RequestCellsForRound(round);
 
-    if (gravity == Gravity.Up) {
-      for (int i = 0; i < cells.Length; i++) {
-        CreateRenderer(cells[i], i * ((int)gravity * -1), col);
-      }
-    } else {
-      for (int i = cells.Length - 1; i > -1; i--) {
-        CreateRenderer(cells[i], i * ((int)gravity * -1), col);
-      }
+    for (int i = cells.Length - 1; i > -1; i--) {
+      CreateRenderer(cells[i], i - cells.Length, col);
     }
 
     //Debug.Log(cellGrid.ToString());
@@ -261,15 +255,6 @@ public class Board : MonoBehaviour {
     var y = (transform.position.y - parentHeight / 2) + (row * gridUnits);
     return new Vector3(x, y, transform.position.z + GameManager.zOffset);
   }
-
-  // This is somewhat unreliable for the column due to float rounding errors
-  //Point WorldToGrid(GameObject o) {
-  //  var pos = o.transform.position;
-  //  int col = Mathf.FloorToInt(pos.x / (float)cellSize);
-  //  int row = Mathf.FloorToInt(pos.y / (float)cellSize) * (int)gravity;
-  //  //Debug.Log("World to Grid Space: (x: " + pos.x + ",y:" + pos.y + " ) to (row: " + row + ", col: " + col + ")");
-  //  return new Point(row, col);
-  //}
 
   int WorldYtoGridRow(GameObject o) {
     var pos = o.transform.position;

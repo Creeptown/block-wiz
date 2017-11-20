@@ -16,6 +16,10 @@ public class CellRenderer : MonoBehaviour {
   public Sprite normalSprite;
   [Tooltip("Bomb Sprite")]
   public Sprite bombSprite;
+  //[Tooltip("Normal Pivot Sprite")]
+  //public Sprite normalPivotSprite;
+  //[Tooltip("Bomb Pivot Sprite")]
+  //public Sprite bombPivotSprite;
   public Color red;
   public Color blue;
   public Color green;
