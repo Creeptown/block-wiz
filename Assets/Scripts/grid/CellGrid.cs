@@ -39,6 +39,16 @@ public class CellGrid {
     return false;
   }
 
+  public void RemoveCell(Cell c) {
+    grid[c.Position.Row, c.Position.Col] = null;
+  }
+
+  public void SetRow(Cell c, int col) {
+    var pos = new Point(TargetRow(col), col);
+    grid[pos.Row, pos.Col] = c;
+    c.Position = pos;
+  }
+
   public bool IsEmpty(Point p) {
     return IsEmpty(p.Row, p.Col);
   }
@@ -107,13 +117,6 @@ public class CellGrid {
     } 
 
     return canMove;
-  }
-
-  public void SetRow(Cell c, int col) {
-    var pos = new Point(TargetRow(col), col);
-    grid[c.Position.Row, c.Position.Col] = null;
-    grid[pos.Row, pos.Col] = c;
-    c.Position = pos;
   }
 
   #endregion movement

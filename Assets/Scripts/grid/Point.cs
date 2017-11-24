@@ -8,6 +8,6 @@
   }
 
   public override string ToString() {
-    return "[Point] row: " + Row + ", col: " + Col;
+    return "[Point] Col: " + Col + ", Row: " + Row;
   }
 }

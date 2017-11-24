@@ -143,6 +143,26 @@ public class Board : MonoBehaviour {
     //Debug.Log(cellGrid.ToString());
   }
 
+  void CreateRenderer(CellSpawn spawn, int row, int col) {
+    var cell = new Cell(spawn);
+
+    // If we can't add any more cells we've reached the game over state
+    if (!cellGrid.AddCell(cell, col)) {
+      State = BoardState.Lost;
+      Debug.Log("Player " + boardIndex + " has Lost");
+      return;
+    }
+
+    var pos = GridToWorldSpace(row, col);
+    // TODO Probably should be in the renderer's Init method
+    var obj = Instantiate(cellRendererPrefab, pos, Quaternion.identity) as GameObject;
+
+    obj.transform.parent = transform;
+    obj.GetComponent<CellRenderer>().Initialize(cell, this);
+    alive.Add(obj);
+    falling.Add(obj);
+  }
+
   // Once all cells are fixed, resolve any connections between bombs and normal
   // cells until cells are no longer fallings
   // Returns true if all connections are resolved, false if we're still resolving
@@ -223,27 +243,6 @@ public class Board : MonoBehaviour {
       o.GetComponent<CellRenderer>().Destroy();
     });
     toRender.ForEach(o => o.GetComponent<CellRenderer>().RenderGroup());
-  }
-
-  void CreateRenderer(CellSpawn spawn, int row, int col) {
-    var cell = new Cell(spawn);
-
-    // If we can't add any more cells we've reached the game over state
-    if (!cellGrid.AddCell(cell, col)) {
-      State = BoardState.Lost;
-      Debug.Log("Player "+ boardIndex + " has Lost");
-      return;
-    }
-
-    var pos = GridToWorldSpace(row, col);
-    // TODO Probably should be in the renderer's Init method
-    var obj = Instantiate(cellRendererPrefab, pos, Quaternion.identity) as GameObject;
-    var renderer = obj.GetComponent<CellRenderer>();
-
-    obj.transform.parent = transform;
-    renderer.Initialize(cell, this);
-    alive.Add(obj);
-    falling.Add(obj);
   }
 
   internal Vector3 GridToWorldSpace(Point p) {
@@ -328,6 +327,8 @@ public class Board : MonoBehaviour {
     }
 
     bool clockwise = rotation < 0;
+    bool canRotate = false;
+    int translate = 0;
     GameObject lever = falling[0];
     // Instead of this we could just loop around the remaining
     GameObject pivot = falling[1];
@@ -342,29 +343,60 @@ public class Board : MonoBehaviour {
     int dx = cx - lx;
     int dy = cy - ly;
     // Point is (row, col) i.e. Point (y,x)
-    var newPos = clockwise ? new Point(cy + dx, cx - dy) : new Point(cy - dx, cx - dy);
+    var newPos = clockwise 
+      ? new Point(cy + dx, cx - dy)      
+      : new Point(cy - dx, cx + dy);
 
-    Debug.Log("lever: (" + leverInGrid.Col + ", " + leverInGrid.Row + ")" +
-              ", pivot: (" + pivotInGrid.Col + ", " + pivotInGrid.Row + ")" +
-              ", dx: "+dx+
-              ", dy:" +dy+ 
-              ", new: (" + newPos.Col + ", " + newPos.Row + ")" +
-              ", transform: " + GridToWorldSpace(newPos));
+    // Out of bounds or colliding, see if can shift
+    if (CanRotate(newPos)) {
+      canRotate = true;
+    } else { // If we're colliding on the left, shift right and vice versa (wallkick)
+      //translate = newPos.Col < pivotInGrid.Col ? 1 : -1;
+      //newPos = new Point(newPos.Row, newPos.Col + translate);
+      //pivotInGrid = new Point(pivotInGrid.Row, pivotInGrid.Col + translate);
+      //canRotate = CanRotate(newPos) && CanRotate(pivotInGrid);
+    }
 
-    var pos = pivot.transform.position;
-    lever.transform.position = new Vector3(
-      pos.x + dy * (clockwise ? -1 : 1) * GridToWorldUnit(),
-      pos.y + dx * GridToWorldUnit(),
-      Zoffset()
-    );
+    if (canRotate) {
+      var pos = pivot.transform.position;
+      lever.transform.position = new Vector3(
+        pos.x - (cx - newPos.Col) * GridToWorldUnit(),
+        pos.y - (cy - newPos.Row) * GridToWorldUnit(),
+        Zoffset()
+      );
+      pivot.transform.position = new Vector3(
+        pos.x - (cx - pivotInGrid.Col) * GridToWorldUnit(),
+        pos.y - (cy - pivotInGrid.Row) * GridToWorldUnit(),
+        Zoffset()
+      );
 
-    // falling.Sort()
-    cellGrid.SetRow(leverCell, newPos.Col, " lever");
-    cellGrid.SetRow(pivotCell, pivotInGrid.Col, " pivot");
-    lever.GetComponent<CellRenderer>().UpdateTarget();
-    pivot.GetComponent<CellRenderer>().UpdateTarget();
+      // Seems like it doesn't get re-added sometimes
+      cellGrid.RemoveCell(pivotCell);
+      cellGrid.RemoveCell(leverCell);
 
-    return new WaitForSeconds(0.2f);
+      // Order matters, set the grid position of the lowest cell first falling.Sort().
+      // Depends on gravity, while it's up higher == closer to bottom
+      // lever is closer to bottom
+      if (lever.transform.position.y > pivot.transform.position.y && gravity == Gravity.Up) {
+        cellGrid.SetRow(leverCell, newPos.Col);
+        cellGrid.SetRow(pivotCell, pivotInGrid.Col);
+      } else {
+        cellGrid.SetRow(pivotCell, pivotInGrid.Col);
+        cellGrid.SetRow(leverCell, newPos.Col);
+      }
+
+      falling.ForEach(o => {
+        o.GetComponent<CellRenderer>().UpdateTarget();
+      });
+
+      return new WaitForSeconds(rotationDelay);
+    }
+
+    return new WaitForSeconds(0);
+  }
+
+  bool CanRotate(Point pos) {
+    return pos.Col >= 0 && pos.Col < columnCount && cellGrid.IsEmpty(pos);
   }
 
   #endregion Control

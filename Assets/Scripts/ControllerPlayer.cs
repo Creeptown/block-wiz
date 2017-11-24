@@ -16,7 +16,7 @@ public class ControllerPlayer : Controller {
       bool rotateRight = Input.GetButtonDown("RotateClockwise");
 
       //yield return board.Drop(drop);
-      //if (direction != 0f) yield return board.MoveHorizontal(direction);
+      if (direction != 0f) yield return board.MoveHorizontal(direction);
       if (rotateLeft) yield return board.Rotate(90);
       if (rotateRight) yield return board.Rotate(-90);
 
