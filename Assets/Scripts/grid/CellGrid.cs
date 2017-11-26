@@ -45,8 +45,10 @@ public class CellGrid {
 
   public void SetRow(Cell c, int col) {
     var pos = new Point(TargetRow(col), col);
+    //grid[c.Position.Row, c.Position.Col] = null;
     grid[pos.Row, pos.Col] = c;
     c.Position = pos;
+    //Debug.Log("Setting Row " + c);
   }
 
   public bool IsEmpty(Point p) {
@@ -107,7 +109,7 @@ public class CellGrid {
     });
 
     if (canMove) {
-      cells.ForEach(c => {
+      cells.OrderByDescending(c => c.Position.Row).ToList().ForEach(c => {
         var col = c.Position.Col + dir;
         var pos = new Point(TargetRow(col), col);
         grid[c.Position.Row, c.Position.Col] = null;
@@ -385,7 +387,26 @@ public class CellGrid {
     for (int j = 0; j < rowCount; j++) {
       for (int i = 0; i < columnCount; i++) {
         cell = grid[j, i];
-        ret += cell == null ? "_" : (cell.InGroup ? "g" : (cell.Type == CellType.Bomb ? "b" : "n"));
+        if (cell != null) {
+          string color = "";
+          switch (cell.Color) {
+            case CellColor.Red:
+              color = "r";
+              break;
+            case CellColor.Green:
+              color = "g";
+              break;
+            case CellColor.Blue:
+              color = "b";
+              break;
+            case CellColor.Yellow:
+              color = "y";
+              break;
+          }
+          ret += (cell.InGroup ? "g" : (cell.Type == CellType.Bomb ? color.ToUpper() : color));
+        } else {
+          ret += "_";
+        }
       }
       ret += System.Environment.NewLine;
     }

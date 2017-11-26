@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class Board : MonoBehaviour {
@@ -140,7 +141,7 @@ public class Board : MonoBehaviour {
       CreateRenderer(cells[i], i - cells.Length, col);
     }
 
-    //Debug.Log(cellGrid.ToString());
+    Debug.Log(cellGrid.ToString());
   }
 
   void CreateRenderer(CellSpawn spawn, int row, int col) {
@@ -200,8 +201,7 @@ public class Board : MonoBehaviour {
   void MakeFalling() {
     CellRenderer renderer;
     alive.ForEach(obj => {
-      renderer = obj.GetComponent<CellRenderer>();
-      renderer.UpdateTarget();
+      renderer = obj.GetComponent<CellRenderer>().UpdateTarget();
       if (obj.transform.position != renderer.TargetPosition) {
         falling.Add(obj);
       }
@@ -217,7 +217,9 @@ public class Board : MonoBehaviour {
         toFixed.Add(o);
       }
     });
+
     toFixed.ForEach(obj => falling.Remove(obj));
+
     if (falling.Count == 0) cellGrid.OnFixed();
   }
 
@@ -307,15 +309,15 @@ public class Board : MonoBehaviour {
 
       if (canMove && (dir < 0 ? cellGrid.ShiftCellsLeft(cells) : cellGrid.ShiftCellsRight(cells))) {
         falling.ForEach(o => {
-          var renderer = o.GetComponent<CellRenderer>();
           var pos = o.transform.position;
           o.transform.position = new Vector3(pos.x + (GridToWorldUnit() * dir), pos.y, Zoffset());
-          renderer.UpdateTarget();
+          o.GetComponent<CellRenderer>().UpdateTarget();
         });
+        Debug.Log(cellGrid);
       }
     }
 
-    return new WaitForSeconds(dir != 0f && canMove ? moveDelay : 0f);
+    return new WaitForSeconds(!Mathf.Approximately(dir, 0f) && canMove ? moveDelay : 0f);
   }
 
   // The first block is always the rotating lever, the second block is the pivot
@@ -370,14 +372,13 @@ public class Board : MonoBehaviour {
         Zoffset()
       );
 
-      // Seems like it doesn't get re-added sometimes
       cellGrid.RemoveCell(pivotCell);
       cellGrid.RemoveCell(leverCell);
 
       // Order matters, set the grid position of the lowest cell first falling.Sort().
       // Depends on gravity, while it's up higher == closer to bottom
       // lever is closer to bottom
-      if (lever.transform.position.y > pivot.transform.position.y && gravity == Gravity.Up) {
+      if ((cy - newPos.Row) == -1) {
         cellGrid.SetRow(leverCell, newPos.Col);
         cellGrid.SetRow(pivotCell, pivotInGrid.Col);
       } else {
@@ -385,9 +386,9 @@ public class Board : MonoBehaviour {
         cellGrid.SetRow(leverCell, newPos.Col);
       }
 
-      falling.ForEach(o => {
-        o.GetComponent<CellRenderer>().UpdateTarget();
-      });
+      Debug.Log(cellGrid);
+
+      falling.ForEach(o => o.GetComponent<CellRenderer>().UpdateTarget());
 
       return new WaitForSeconds(rotationDelay);
     }

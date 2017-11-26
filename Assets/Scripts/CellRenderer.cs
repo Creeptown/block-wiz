@@ -93,14 +93,15 @@ public class CellRenderer : MonoBehaviour {
     Render();
   }
 
-  internal void UpdateTarget() {
+  internal CellRenderer UpdateTarget() {
     if (RenderableGroup()) {
       TargetPosition = GroupCenter();
       //Debug.Log("Updateing target. pos: " + transform.position + ", target: " + TargetPosition);
     } else {
       TargetPosition = board.GridToWorldSpace(Cell.Position);
     }
-}
+    return this;
+  }
 
   Vector3 GroupCenter() {
     var grp = Cell.Group;
