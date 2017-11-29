@@ -68,11 +68,11 @@ MonoBehaviour:
   cellSize: 60
   cellPadding: 2
   startColumn: 4
-  normalSpeed: 5
+  normalSpeed: 2
   dropSpeed: 10
   fallSpeed: 10
   touchTime: 0.2
-  rotationDelay: 0.1
+  rotationDelay: 0.2
   moveDelay: 0.2
   gravity: 1
   cellRendererPrefab: {fileID: 1207795821424438, guid: c40bdc9a1ae101642a6e7fccdafa26ac,

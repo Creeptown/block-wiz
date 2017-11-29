@@ -109,16 +109,63 @@ public class CellGrid {
     });
 
     if (canMove) {
+      cells.ForEach(c => RemoveCell(c));
       cells.OrderByDescending(c => c.Position.Row).ToList().ForEach(c => {
         var col = c.Position.Col + dir;
         var pos = new Point(TargetRow(col), col);
-        grid[c.Position.Row, c.Position.Col] = null;
         grid[pos.Row, pos.Col] = c;
         c.Position = pos;
       });
     } 
 
     return canMove;
+  }
+
+  // Set the position of the cells and returns possibly modified lever and pivot positions
+  public List<Point> RotateCells(Cell lever, Point leverPos, Cell pivot, Point pivotPos, bool clockwise) {
+    int translate = 0;
+    bool canRotate = true;
+    var newLeverPos = RotateAround(leverPos, pivotPos, clockwise);
+    var newPivotPos = pivotPos;
+
+    // Attempt to shift the cells if colliig
+    if (!IsEmpty(newLeverPos)) {
+      translate = newLeverPos.Col < newPivotPos.Col ? 1 : -1;
+      newLeverPos = new Point(newLeverPos.Row, newLeverPos.Col + translate);
+      newPivotPos = new Point(newPivotPos.Row, newPivotPos.Col + translate);
+      canRotate = IsEmpty(newLeverPos) && IsEmpty(newPivotPos);
+    }
+
+    if (canRotate) {
+      RemoveCell(pivot);
+      RemoveCell(lever);
+      // Order matters, set the grid position of the lowest cell first falling.Sort().
+      // Depends on gravity, while it's up higher == closer to bottom
+      if ((newPivotPos.Row - newLeverPos.Row) == -1) {
+        SetRow(lever, newLeverPos.Col);
+        SetRow(pivot, newPivotPos.Col);
+      } else {
+        SetRow(pivot, newPivotPos.Col);
+        SetRow(lever, newLeverPos.Col);
+      }
+
+      return new List<Point> { newLeverPos, newPivotPos };
+    }
+
+    return null;
+  }
+
+  Point RotateAround(Point lever, Point pivot, bool clockwise) {
+    int lx = lever.Col;
+    int ly = lever.Row;
+    int cx = pivot.Col;
+    int cy = pivot.Row;
+    int dx = cx - lx;
+    int dy = cy - ly;
+    // Point is (row, col) i.e. Point (y,x)
+    return clockwise
+      ? new Point(cy + dx, cx - dy)
+      : new Point(cy - dx, cx + dy);
   }
 
   #endregion movement

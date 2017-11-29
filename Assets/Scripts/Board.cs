@@ -133,15 +133,14 @@ public class Board : MonoBehaviour {
 
   // Spawns a column of Cells in a random column at the top of the board
   void SpawnPlayerCells() {
-    //var col = Random.Range(0, columnCount);
-    var col = 2;
+    var col = Random.Range(0, columnCount);
     var cells = GameManager.RequestCellsForRound(round);
 
     for (int i = cells.Length - 1; i > -1; i--) {
       CreateRenderer(cells[i], i - cells.Length, col);
     }
 
-    Debug.Log(cellGrid.ToString());
+    //Debug.Log(cellGrid.ToString());
   }
 
   void CreateRenderer(CellSpawn spawn, int row, int col) {
@@ -313,9 +312,10 @@ public class Board : MonoBehaviour {
           o.transform.position = new Vector3(pos.x + (GridToWorldUnit() * dir), pos.y, Zoffset());
           o.GetComponent<CellRenderer>().UpdateTarget();
         });
-        Debug.Log(cellGrid);
       }
     }
+
+    //Debug.Log(cellGrid);
 
     return new WaitForSeconds(!Mathf.Approximately(dir, 0f) && canMove ? moveDelay : 0f);
   }
@@ -328,65 +328,37 @@ public class Board : MonoBehaviour {
       return new WaitForSeconds(0f);
     }
 
-    bool clockwise = rotation < 0;
-    bool canRotate = false;
-    int translate = 0;
     GameObject lever = falling[0];
-    // Instead of this we could just loop around the remaining
+    // TODO Instead of this we could just loop around the remaining
     GameObject pivot = falling[1];
     Cell leverCell = lever.GetComponent<CellRenderer>().Cell;
     Cell pivotCell = pivot.GetComponent<CellRenderer>().Cell;
     Point leverInGrid = new Point(WorldYtoGridRow(lever), leverCell.Position.Col);
     Point pivotInGrid = new Point(WorldYtoGridRow(pivot), pivotCell.Position.Col);
-    int lx = leverInGrid.Col;
-    int ly = leverInGrid.Row;
-    int cx = pivotInGrid.Col;
-    int cy = pivotInGrid.Row;
-    int dx = cx - lx;
-    int dy = cy - ly;
-    // Point is (row, col) i.e. Point (y,x)
-    var newPos = clockwise 
-      ? new Point(cy + dx, cx - dy)      
-      : new Point(cy - dx, cx + dy);
+    List<Point> newPositions = cellGrid.RotateCells(
+      leverCell, leverInGrid, pivotCell, pivotInGrid, rotation < 0
+    );
 
-    // Out of bounds or colliding, see if can shift
-    if (CanRotate(newPos)) {
-      canRotate = true;
-    } else { // If we're colliding on the left, shift right and vice versa (wallkick)
-      //translate = newPos.Col < pivotInGrid.Col ? 1 : -1;
-      //newPos = new Point(newPos.Row, newPos.Col + translate);
-      //pivotInGrid = new Point(pivotInGrid.Row, pivotInGrid.Col + translate);
-      //canRotate = CanRotate(newPos) && CanRotate(pivotInGrid);
-    }
-
-    if (canRotate) {
+    // We just want to adjust the current position by the diff from the old/new position
+    // rather than set it to the new position as that will be rounded to an specific
+    // grid row/col
+    if (newPositions != null) {
+      var newLeverPos = newPositions[0];
+      var newPivotPosition = newPositions[1];
       var pos = pivot.transform.position;
+
       lever.transform.position = new Vector3(
-        pos.x - (cx - newPos.Col) * GridToWorldUnit(),
-        pos.y - (cy - newPos.Row) * GridToWorldUnit(),
+        pos.x - (pivotInGrid.Col - newLeverPos.Col) * GridToWorldUnit(),
+        pos.y - (pivotInGrid.Row - newLeverPos.Row) * GridToWorldUnit(),
         Zoffset()
       );
       pivot.transform.position = new Vector3(
-        pos.x - (cx - pivotInGrid.Col) * GridToWorldUnit(),
-        pos.y - (cy - pivotInGrid.Row) * GridToWorldUnit(),
+        pos.x - (pivotInGrid.Col - newPivotPosition.Col) * GridToWorldUnit(),
+        pos.y - (pivotInGrid.Row - newPivotPosition.Row) * GridToWorldUnit(),
         Zoffset()
       );
 
-      cellGrid.RemoveCell(pivotCell);
-      cellGrid.RemoveCell(leverCell);
-
-      // Order matters, set the grid position of the lowest cell first falling.Sort().
-      // Depends on gravity, while it's up higher == closer to bottom
-      // lever is closer to bottom
-      if ((cy - newPos.Row) == -1) {
-        cellGrid.SetRow(leverCell, newPos.Col);
-        cellGrid.SetRow(pivotCell, pivotInGrid.Col);
-      } else {
-        cellGrid.SetRow(pivotCell, pivotInGrid.Col);
-        cellGrid.SetRow(leverCell, newPos.Col);
-      }
-
-      Debug.Log(cellGrid);
+      //Debug.Log(cellGrid);
 
       falling.ForEach(o => o.GetComponent<CellRenderer>().UpdateTarget());
 
@@ -394,10 +366,6 @@ public class Board : MonoBehaviour {
     }
 
     return new WaitForSeconds(0);
-  }
-
-  bool CanRotate(Point pos) {
-    return pos.Col >= 0 && pos.Col < columnCount && cellGrid.IsEmpty(pos);
   }
 
   #endregion Control
