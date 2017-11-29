@@ -15,7 +15,7 @@ public class GameManager : MonoBehaviour {
   public static int seed = 0;
   [Tooltip("Number of cells to use when generating the player's piece")]
   public int pieceCount = 2;
-  [Tooltip("Number of players in this game"), Range(1,4)]
+  [Tooltip("Number of players in this game")]
   public int playerCount = 1;
   [Tooltip("Sprite Pixels Per Unit")]
   public int PPU = 100;

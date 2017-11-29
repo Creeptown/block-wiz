@@ -39,11 +39,12 @@ public class CellRenderer : MonoBehaviour {
   }
 
   // Set the target position and render the cell based on its properties
-  internal void Initialize(Cell cell, Board board) {
+  internal CellRenderer Initialize(Cell cell, Board board) {
     this.Cell = cell;
     this.board = board;
     TargetPosition = board.GridToWorldSpace(cell.Position);
     Render();
+    return this;
   }
 
   internal void Destroy() {
@@ -53,7 +54,7 @@ public class CellRenderer : MonoBehaviour {
     Destroy(gameObject);
   }
 
-  internal void Render() {
+  internal CellRenderer Render() {
     spriteRenderer = GetComponent<SpriteRenderer>();
     switch (Cell.Type) {
       case CellType.Bomb:
@@ -84,13 +85,14 @@ public class CellRenderer : MonoBehaviour {
     if (RenderableGroup()) {
       transform.localScale = new Vector3(Cell.Group.Width, Cell.Group.Height, 0);
     }
+    return this;
   }
 
-  internal void RenderGroup() {
-    if (!RenderableGroup()) return;
+  internal CellRenderer RenderGroup() {
+    if (!RenderableGroup()) return this;
     transform.position = TargetPosition = GroupCenter();
     //Debug.Log("Rendering Group at " + TargetPosition);
-    Render();
+    return Render();
   }
 
   internal CellRenderer UpdateTarget() {

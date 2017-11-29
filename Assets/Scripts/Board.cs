@@ -12,7 +12,7 @@ public class Board : MonoBehaviour {
     Playing,    // User is manipulating an active piece
     Grouping,   // Recalculate cellGroup membership
     Resolving,  // Player can no longer manipulate the board this round. Recursively Resolve Cell Connections
-    Destroying, // Animate destroy, prevents immediate successive resolves
+    Destroying, // Animate destroy, prevents immediate successive resolves (Currently unused)
     Combining,  // Update CellGroups
     Scoring,    // Calculating final score and assessing Attack Damage
     RoundEnd,   // Safe to transition to Round Start
@@ -55,7 +55,7 @@ public class Board : MonoBehaviour {
 
   int round = 0; // Current round - independent of other boards
   int score = 0; // Total score for this board
-  List<int> clearedThisRound; // Track each gem clear separately to tally combos
+  List<int> clearedThisRound = new List<int>(); // Track each gem clear separately to tally combos
   float speed; // Current speed in which cellgroup is dropping
   List<GameObject> falling = new List<GameObject>(); // Currently falling cells
   List<GameObject> alive = new List<GameObject>(); // All cells
@@ -117,7 +117,8 @@ public class Board : MonoBehaviour {
           State = BoardState.Scoring;
           break;
         case BoardState.Scoring:
-          score += ScoreRound();
+          ScoreRound();
+          // Display combos etc. whatever
           State = BoardState.RoundEnd;
           break;
         case BoardState.RoundEnd:
@@ -169,12 +170,19 @@ public class Board : MonoBehaviour {
   bool Resolve() {
     if (falling.Count > 0) return false;
     var toRemove = new List<GameObject>();
+    var toScore = new List<Cell>();
 
     cellGrid.DestroyConnected();
 
     alive.ForEach(o => {
-      if (!cellGrid.CellExists(o.GetComponent<CellRenderer>().Cell)) toRemove.Add(o);
+      var c = o.GetComponent<CellRenderer>().Cell;
+      if (!cellGrid.CellExists(c)) {
+        toRemove.Add(o);
+        toScore.Add(c);
+      }
     });
+
+    ScoreCells(toScore);
 
     toRemove.ForEach(o => {
       alive.Remove(o);
@@ -379,8 +387,15 @@ public class Board : MonoBehaviour {
     pendingCounter = cellsToSpawn;
   }
 
-  int ScoreRound() {
-    return Scoring.Score();
+  void ScoreCells(List<Cell> cells) {
+    var score = Scoring.ScoreCells(round, cells);
+    if (score > 0) clearedThisRound.Add(score);
+  }
+
+  void ScoreRound() {
+    var ret = Scoring.ScoreRound(round, clearedThisRound);
+    score += ret;
+    clearedThisRound.Clear();
   }
 
   #endregion Scoring and Countering

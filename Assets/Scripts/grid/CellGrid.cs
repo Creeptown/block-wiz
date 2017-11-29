@@ -428,6 +428,20 @@ public class CellGrid {
     }
   }
 
+  // TODO Better board debug
+  //r - To represent a regular RED gem.
+  //g - To represent a regular GREEN gem.
+  //b - To represent a regular BLUE gem.
+  //y - To represent a regular YELLOW gem.
+  //R - To represent a RED crash gem.
+  //G - To represent a GREEN crash gem.
+  //B - To represent a BLUE crash gem.
+  //Y - To represent a YELLOW crash gem.
+  //* - To represent the DIAMOND gem.
+  //@ - To represent a RED counter gem (any number).
+  //# - To represent a GREEN counter gem (any number).
+  //% - To represent a BLUE counter gem (any number).
+  //& - To represent a YELLOW counter gem (any number).
   public override string ToString() {
     var ret = "";
     Cell cell;
