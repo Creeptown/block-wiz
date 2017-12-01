@@ -16,6 +16,8 @@ public class CellRenderer : MonoBehaviour {
   public Sprite normalSprite;
   [Tooltip("Bomb Sprite")]
   public Sprite bombSprite;
+  [Tooltip("Counter Sprite")]
+  public Sprite counterSprite;
   //[Tooltip("Normal Pivot Sprite")]
   //public Sprite normalPivotSprite;
   //[Tooltip("Bomb Pivot Sprite")]
@@ -59,6 +61,9 @@ public class CellRenderer : MonoBehaviour {
     switch (Cell.Type) {
       case CellType.Bomb:
         spriteRenderer.sprite = bombSprite;
+        break;
+      case CellType.Counter:
+        spriteRenderer.sprite = counterSprite;
         break;
       default:
         spriteRenderer.sprite = normalSprite;

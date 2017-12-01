@@ -60,7 +60,7 @@ public class Board : MonoBehaviour {
   List<GameObject> falling = new List<GameObject>(); // Currently falling cells
   List<GameObject> alive = new List<GameObject>(); // All cells
   CellGrid cellGrid;
-  List<CellSpawn> pendingCounter = new List<CellSpawn>(); // Whether or not we have pending counters to drop
+  List<CellSpawn> pendingCounters = new List<CellSpawn>(); // Whether or not we have pending counters to drop
   SpriteRenderer spriteRenderer;
 
   void Awake() {
@@ -85,7 +85,7 @@ public class Board : MonoBehaviour {
     while (State != BoardState.Inactive && State != BoardState.Won && State != BoardState.Lost) {
       switch (State) {
         case BoardState.RoundStart:
-          if (pendingCounter.Count > 0) {
+          if (pendingCounters.Count > 0) {
             State = BoardState.Countering;
           } else {
             SpawnPlayerCells();
@@ -93,9 +93,10 @@ public class Board : MonoBehaviour {
           }
           break;
         case BoardState.Countering:
+          SpawnCounterCells(pendingCounters);
           State = BoardState.Playing;
           // Do counter - basically just add a bunch of counter gems to the falling list
-          pendingCounter.Clear();
+          pendingCounters.Clear();
           break;
         case BoardState.Playing:
           MakeFixed();
@@ -142,6 +143,18 @@ public class Board : MonoBehaviour {
     }
 
     //Debug.Log(cellGrid.ToString());
+  }
+
+  void SpawnCounterCells(List<CellSpawn> toSpawn) {
+    int row = -1;
+    int col = 0;
+    toSpawn.ForEach(s => {
+      CreateRenderer(s, row, col);
+      if (++col == columnCount) {
+        col = 0;
+        row--;
+      }
+    });
   }
 
   void CreateRenderer(CellSpawn spawn, int row, int col) {
@@ -379,12 +392,32 @@ public class Board : MonoBehaviour {
   #endregion Control
 
   #region Scoring and Countering
-  public void SendAttack() {
-    //GameManager.Attack()
+  public void SendAttack(int count) {
+    var toSpawn = new List<CellSpawn>();
+    CellColor color;
+    for (int i = 0; i < count; i++) {
+      color = (CellColor)Random.Range(0, System.Enum.GetValues(typeof(CellColor)).Length);
+      toSpawn.Add(new CellSpawn(color, CellType.Counter, round));
+    }
+    int target = boardIndex == 0 ? 1 : 0;
+    Debug.Log("Board " + boardIndex + " Sending attack to " + target);
+    GameManager.Attack(new int[]{target}, toSpawn);
   }
 
   public void ReceiveAttack(List<CellSpawn> cellsToSpawn) {
-    pendingCounter = cellsToSpawn;
+    pendingCounters = cellsToSpawn;
+    Debug.Log("Receiving attack");
+    //var outgoing = receiver.OutgoingActions.Where(a => a.GetType() == GetType()).FirstOrDefault();
+    //if (outgoing) {
+    //  // Reduce incoming power by whatever is smaller - the total amount or half of the power of the outgoing attack
+    //  int CancelPower = Mathf.Min(Power, Mathf.RoundToInt(outgoing.Power * 0.5f));
+    //  if (CancelPower > 0) {
+    //    Power = Power - CancelPower;
+    //    // Reduce outcoming power by double cancel power
+    //    outgoing.Power = outgoing.Power - CancelPower * 2;
+    //  }
+    //}
+    //if (Power > 0) DropCells(receiver);
   }
 
   void ScoreCells(List<Cell> cells) {
@@ -393,8 +426,12 @@ public class Board : MonoBehaviour {
   }
 
   void ScoreRound() {
-    var ret = Scoring.ScoreRound(round, clearedThisRound);
-    score += ret;
+    var roundScore = Scoring.ScoreRound(round, clearedThisRound);
+    score += roundScore;
+    Debug.Log("Round Score: "+roundScore+", Total Score: " + score);
+    if (roundScore > 0) {
+      SendAttack(roundScore);
+    }
     clearedThisRound.Clear();
   }
 

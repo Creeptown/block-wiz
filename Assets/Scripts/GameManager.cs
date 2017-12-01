@@ -15,7 +15,7 @@ public class GameManager : MonoBehaviour {
   public static int seed = 0;
   [Tooltip("Number of cells to use when generating the player's piece")]
   public int pieceCount = 2;
-  [Tooltip("Number of players in this game")]
+  [Tooltip("Number of players in this game"), Range(1,4)]
   public int playerCount = 1;
   [Tooltip("Sprite Pixels Per Unit")]
   public int PPU = 100;
@@ -63,8 +63,8 @@ public class GameManager : MonoBehaviour {
 
   public void Attack(int[] boardIndexes, List<CellSpawn> cellsToDrop) {
     for (int i = 0; i < boardIndexes.Length; i++) {
-      var board = boards[i];
-      board.ReceiveAttack(cellsToDrop);
+      var board = boards[boardIndexes[i]];
+      if (board != null) board.ReceiveAttack(cellsToDrop);
     }
   }
 
