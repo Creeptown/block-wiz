@@ -13,7 +13,8 @@ public class Board : MonoBehaviour {
     Grouping,   // Recalculate cellGroup membership
     Resolving,  // Player can no longer manipulate the board this round. Recursively Resolve Cell Connections
     Destroying, // Animate destroy, prevents immediate successive resolves (Currently unused)
-    Combining,  // Update CellGroups
+    Decrementing, // Decrement counter cells
+    Combining,  // Merge Cells into Groups
     Scoring,    // Calculating final score and assessing Attack Damage
     RoundEnd,   // Safe to transition to Round Start
     Won,        // Player has won
@@ -112,9 +113,13 @@ public class Board : MonoBehaviour {
         case BoardState.Resolving:
           MakeFixed();
           if (Resolve()) {
-            State = BoardState.Combining;
+            State = BoardState.Decrementing;
           }
           MoveActive();
+          break;
+        case BoardState.Decrementing:
+          Decrement();
+          State = BoardState.Combining;
           break;
         case BoardState.Combining:
           Combine();
@@ -248,28 +253,41 @@ public class Board : MonoBehaviour {
     if (falling.Count == 0) cellGrid.OnFixed();
   }
 
+  void Decrement() {
+    alive.ForEach(obj => {
+      var r = obj.GetComponent<CellRenderer>();
+      if (r.Cell.Type == CellType.Counter) {
+        r.Render(round);
+      }
+    });
+  }
+
   // After we have resolved, we'll need to combine any newly created groups and
   // remove unused renderers
   // Note: Once cells become part of a group, only the first cell in the group is
   // responsible for rendering the entire group
   void Combine() {
     var toRemove = new List<GameObject>();
-    var toRender = new List<GameObject>();
-    alive.ForEach(o => {
-      var r = o.GetComponent<CellRenderer>();
+    var toCombine = new List<CellRenderer>();
+    alive.ForEach(obj => {
+      var r = obj.GetComponent<CellRenderer>();
       if (r.Cell.InGroup) {
         // If the renderer's cell is in a group, and that group's cell
         // is not the same as the renderer, then this renderer can be removed
         // Or if the group has been removed from the board
-        (r.Cell.Group.Cell != r.Cell || !cellGrid.GroupExists(r.Cell.Group) ? toRemove : toRender).Add(o);
+        if (r.Cell.Group.Cell != r.Cell || !cellGrid.GroupExists(r.Cell.Group) ) {
+          toRemove.Add(obj);
+        } else {
+          toCombine.Add(r);
+        }
       }
     });
-    toRemove.ForEach(o => {
-      alive.Remove(o);
-      falling.Remove(o);
-      o.GetComponent<CellRenderer>().Destroy();
+    toRemove.ForEach(obj => {
+      alive.Remove(obj);
+      falling.Remove(obj);
+      obj.GetComponent<CellRenderer>().Destroy();
     });
-    toRender.ForEach(o => o.GetComponent<CellRenderer>().RenderGroup());
+    toCombine.ForEach(r => r.Render(round));
   }
 
   internal Vector3 GridToWorldSpace(Point p) {

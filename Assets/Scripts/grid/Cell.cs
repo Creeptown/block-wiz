@@ -1,5 +1,5 @@
 ﻿public class Cell {
-  public CellType Type { get; private set; }
+  public CellType Type { get; set; }
   public CellColor Color { get; private set; }
   public bool InGroup { get { return Group != null; } }
   public int RoundCreated { get; private set; }

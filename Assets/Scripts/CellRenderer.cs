@@ -16,8 +16,8 @@ public class CellRenderer : MonoBehaviour {
   public Sprite normalSprite;
   [Tooltip("Bomb Sprite")]
   public Sprite bombSprite;
-  [Tooltip("Counter Sprite")]
-  public Sprite counterSprite;
+  [Tooltip("Counter Sprites - starting with the initial state")]
+  public Sprite[] counterSprites;
   //[Tooltip("Normal Pivot Sprite")]
   //public Sprite normalPivotSprite;
   //[Tooltip("Bomb Pivot Sprite")]
@@ -45,7 +45,7 @@ public class CellRenderer : MonoBehaviour {
     this.Cell = cell;
     this.board = board;
     TargetPosition = board.GridToWorldSpace(cell.Position);
-    Render();
+    Render(Cell.RoundCreated);
     return this;
   }
 
@@ -56,19 +56,27 @@ public class CellRenderer : MonoBehaviour {
     Destroy(gameObject);
   }
 
-  internal CellRenderer Render() {
+  internal CellRenderer Render(int round) {
     spriteRenderer = GetComponent<SpriteRenderer>();
+
     switch (Cell.Type) {
       case CellType.Bomb:
         spriteRenderer.sprite = bombSprite;
         break;
       case CellType.Counter:
-        spriteRenderer.sprite = counterSprite;
+        int diff = round - Cell.RoundCreated;
+        if (diff > 5) {
+          Cell.Type = CellType.Normal;
+          spriteRenderer.sprite = normalSprite;
+        } else {
+          spriteRenderer.sprite = counterSprites[diff];
+        }
         break;
       default:
         spriteRenderer.sprite = normalSprite;
         break;
     }
+
     switch (Cell.Color) {
       case CellColor.Red:
         spriteRenderer.color = red;
@@ -88,16 +96,11 @@ public class CellRenderer : MonoBehaviour {
     }
 
     if (RenderableGroup()) {
+      transform.position = TargetPosition = GroupCenter();
       transform.localScale = new Vector3(Cell.Group.Width, Cell.Group.Height, 0);
     }
-    return this;
-  }
 
-  internal CellRenderer RenderGroup() {
-    if (!RenderableGroup()) return this;
-    transform.position = TargetPosition = GroupCenter();
-    //Debug.Log("Rendering Group at " + TargetPosition);
-    return Render();
+    return this;
   }
 
   internal CellRenderer UpdateTarget() {
