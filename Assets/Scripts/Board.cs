@@ -86,6 +86,7 @@ public class Board : MonoBehaviour {
       switch (State) {
         case BoardState.RoundStart:
           if (pendingCounters.Count > 0) {
+            SpawnCounterCells(pendingCounters);
             State = BoardState.Countering;
           } else {
             SpawnPlayerCells();
@@ -93,10 +94,12 @@ public class Board : MonoBehaviour {
           }
           break;
         case BoardState.Countering:
-          SpawnCounterCells(pendingCounters);
-          State = BoardState.Playing;
-          // Do counter - basically just add a bunch of counter gems to the falling list
-          pendingCounters.Clear();
+          MakeFixed();
+          if (falling.Count == 0) {
+            State = BoardState.RoundStart;
+          } else {
+            MoveActive();
+          }
           break;
         case BoardState.Playing:
           MakeFixed();
@@ -155,6 +158,7 @@ public class Board : MonoBehaviour {
         row--;
       }
     });
+    pendingCounters.Clear();
   }
 
   void CreateRenderer(CellSpawn spawn, int row, int col) {
@@ -210,9 +214,10 @@ public class Board : MonoBehaviour {
 
   // Move all active cell groups according to their current speed to their current targets
   void MoveActive() {
-    falling.ForEach(c => {
-      var target = c.GetComponent<CellRenderer>().TargetPosition;
-      c.transform.position = Vector3.MoveTowards(c.transform.position, target, speed * Time.deltaTime);
+    falling.ForEach(o => {
+      var target = o.GetComponent<CellRenderer>().TargetPosition;
+      float cellSpeed = State == BoardState.Playing ? speed : fallSpeed;
+      o.transform.position = Vector3.MoveTowards(o.transform.position, target, cellSpeed * Time.deltaTime);
     });
   }
 

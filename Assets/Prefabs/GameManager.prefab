@@ -53,7 +53,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   allowDiamond: 1
   pieceCount: 2
-  playerCount: 1
+  playerCount: 2
   PPU: 100
   boardPrefab: {fileID: 1602582382233696, guid: a5f5f77091cce744086d569fcfd56fee,
     type: 2}
