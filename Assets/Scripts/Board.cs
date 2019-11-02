@@ -1,129 +1,462 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
-// Board is responsible for controlling CellGroups
-//
-// The sequence of a given round goes like this:
-// 1) If there is a pending counter drop, drop it on the player
-// 2) Spawn player controlled Falling CellGroup
-// 3) Once player controlled group is fixed resolve board positions (pop gems)
-// 4) Set CellGroups that are now able to fall to fall
-// 5) Repeat 3,4 until // all CellGroups are fixed then:
-//   - calculate damage
-//   - Reduce counter gem count by one
-//   - Update Score
 public class Board : MonoBehaviour {
-  public enum Gravity { Up, Down, None }
+  public enum Gravity { Up = 1, Down = -1 }
+  public enum BoardState {
+    Inactive,   // Board is inactive
+    RoundStart, // New Round has begun
+    Countering, // If there are pending counter blocks, drop them
+    Playing,    // User is manipulating an active piece
+    Grouping,   // Recalculate cellGroup membership
+    Resolving,  // Player can no longer manipulate the board this round. Recursively Resolve Cell Connections
+    Destroying, // Animate destroy, prevents immediate successive resolves (Currently unused)
+    Decrementing, // Decrement counter cells
+    Combining,  // Merge Cells into Groups
+    Scoring,    // Calculating final score and assessing Attack Damage
+    RoundEnd,   // Safe to transition to Round Start
+    Won,        // Player has won
+    Lost,       // Player has lost
+  }
 
-  public Controller controller;
-  [Tooltip("Top edge of the board")]
-  public float top = 0;
-  [Tooltip("Left edge of the board")]
-  public float left = 0;
   [Tooltip("Total columns that make up the board")]
-  public int columns = 6;
+  public int columnCount = 6;
   [Tooltip("Total rows that make up the board")]
-  public int rows = 12;
-  [Tooltip("Width/Height of an individual cell")]
+  public int rowCount = 12;
+  [Tooltip("Pixel dimensions of an individual cell")]
   public int cellSize = 20;
-  [Tooltip("Column that CellGroups spawn from")]
+  [Tooltip("Space between cells")]
+  public int cellPadding = 2;
+  [Tooltip("Column that CellGroups spawn from (currently ignored)")]
   public int startColumn = 4;
-  [Tooltip("Normal cells this board can spawn")]
-  public Cell[] normalCells;
-  // TODO Need to handle cells that can spawn due to particular conditions (e.g. diamond cell at every 25th round)
   [Tooltip("Speed in which cellgroup drops normally")]
-  public float normalFallSpeed = 20f;
-  [Tooltip("Speed in which cellgroup drops when player accelerates the drop")]
-  public float acceleratedFallSpeed = 40f;
+  public float normalSpeed = 20f;
+  [Tooltip("Speed in which cellgroup drops when player accelerated")]
+  public float dropSpeed = 40f;
+  [Tooltip("Speed in which fixed cellgroups fall")]
+  public float fallSpeed = 50f;
+  [Tooltip("Length in seconds cells can touch before they become fixed")]
+  public float touchTime = 0.2f;
+  [Tooltip("Time to wait between rotations")]
+  public float rotationDelay = 0.1f;
+  [Tooltip("Time to wait between horizontal moves")]
+  public float moveDelay = 0.2f;
   [Tooltip("Direction CellGroups should move")]
   public Gravity gravity = Gravity.Down;
+  [Tooltip("Cell Renderer Prefab to use")]
+  public GameObject cellRendererPrefab;
+  [Tooltip("Background Sprite")]
+  public Sprite backgroundSprite;
 
-  private GameManager game;
+  internal GameManager GameManager { get; set; }
+  internal BoardState State { get; private set; }
+  internal int boardIndex = -1;
 
-  // Current round - is independent of other boards
-  private int round = 0;
-  // Total score for this board
-  private int score = 0;
-  // Track each gem clear separately to tally combos
-  private List<int> clearedThisRound;
-  // Speed in which cellgroup drops normally
-  private float normalSpeed;
-  // Speed in which cellgroup drops when player accelerates the drop
-  private float acceleratedSpeed;
-  // Parent SpawnedGroups to this locator to keep the scene clean
-  private Transform boardHolder;
-  // Active (read: player controllable cell groups)
-  private CellGroup[] active;
-  // Inactive (non-controllable cell groups)
-  private CellGroup[,] landed;
+  int round = 0; // Current round - independent of other boards
+  int score = 0; // Total score for this board
+  List<int> clearedThisRound = new List<int>(); // Track each gem clear separately to tally combos
+  float speed; // Current speed in which cellgroup is dropping
+  List<GameObject> falling = new List<GameObject>(); // Currently falling cells
+  List<GameObject> alive = new List<GameObject>(); // All cells
+  CellGrid cellGrid;
+  List<CellSpawn> pendingCounters = new List<CellSpawn>(); // Whether or not we have pending counters to drop
+  SpriteRenderer spriteRenderer;
 
-  public static Board Initialize(GameManager game) {
-    // copy initial values from game
-    // save reference to game object
-    return null;
+  void Awake() {
+    State = BoardState.RoundStart;
+    gameObject.AddComponent<SpriteRenderer>();
+    spriteRenderer = GetComponent<SpriteRenderer>();
+    spriteRenderer.sprite = backgroundSprite;
   }
 
-	void Start () {
-    normalSpeed = normalFallSpeed;
-    acceleratedSpeed = acceleratedFallSpeed;
-	}
-	
-	void Update () {
-	}
-
-  void InitializeBoard() {
-    landed = new CellGroup[rows, columns];
-    boardHolder = new GameObject("Board").transform;
-    // instance.transform.SetParent(boardHolder);
+	void Start() {
+    InitializeGrid();
+    speed = normalSpeed;
+    StartCoroutine("Fall");
   }
 
-  void SpawnActiveCellGroup() {
-    GameManager.GenerateCellGroup(round);
-    return;
+  void InitializeGrid() {
+    cellGrid = new CellGrid(rowCount, columnCount);
   }
 
-  void AccelerateActive() {
-    for (int i = 0; i < active.Length; i++) {
-      if (CanMoveDown(active[i])) {
-      }
-    }
-  }
-
-  void RotateActiveLeft() {
-    for (int i = 0; i < active.Length; i++) {
-      if (CanRotateLeft(active[i])) {
-      }
-    }
-  }
-
-  void RotateActiveRight() {
-    for (int i = 0; i < active.Length; i++) {
-      if (CanRotateRight(active[i])) {
-      }
-    }
-  }
-
-  bool CanSpawnGroup() {
-    return true;
-  }
-
-  bool CanRotateLeft(CellGroup group) {
-    return true;
-  }
-
-  bool CanRotateRight(CellGroup group) {
-    return true;
-  }
-
-  bool CanMoveDown(CellGroup group) {
-    return true;
-  }
-
+  // Main Loop
   IEnumerator Fall() {
-    while (true) {
+    while (State != BoardState.Inactive && State != BoardState.Won && State != BoardState.Lost) {
+      switch (State) {
+        case BoardState.RoundStart:
+          if (pendingCounters.Count > 0) {
+            SpawnCounterCells(pendingCounters);
+            State = BoardState.Countering;
+          } else {
+            SpawnPlayerCells();
+            State = BoardState.Playing;
+          }
+          break;
+        case BoardState.Countering:
+          MakeFixed();
+          if (falling.Count == 0) {
+            State = BoardState.RoundStart;
+          } else {
+            MoveActive();
+          }
+          break;
+        case BoardState.Playing:
+          MakeFixed();
+          if (falling.Count == 0) {
+            State = BoardState.Resolving;
+          } else {
+            MoveActive();
+          }
+          break;
+        case BoardState.Resolving:
+          MakeFixed();
+          if (Resolve()) {
+            State = BoardState.Decrementing;
+          }
+          MoveActive();
+          break;
+        case BoardState.Decrementing:
+          Decrement();
+          State = BoardState.Combining;
+          break;
+        case BoardState.Combining:
+          Combine();
+          State = BoardState.Scoring;
+          break;
+        case BoardState.Scoring:
+          ScoreRound();
+          // Display combos etc. whatever
+          State = BoardState.RoundEnd;
+          break;
+        case BoardState.RoundEnd:
+          round++;
+          State = BoardState.RoundStart;
+          break;
+      }
       yield return 0;
     }
   }
 
+  #region Grid
+
+  // Spawns a column of Cells in a random column at the top of the board
+  void SpawnPlayerCells() {
+    var col = Random.Range(0, columnCount);
+    var cells = GameManager.RequestCellsForRound(round);
+
+    for (int i = cells.Length - 1; i > -1; i--) {
+      CreateRenderer(cells[i], i - cells.Length, col);
+    }
+
+    //Debug.Log(cellGrid.ToString());
+  }
+
+  void SpawnCounterCells(List<CellSpawn> toSpawn) {
+    int row = -1;
+    int col = 0;
+    toSpawn.ForEach(s => {
+      CreateRenderer(s, row, col);
+      if (++col == columnCount) {
+        col = 0;
+        row--;
+      }
+    });
+    pendingCounters.Clear();
+  }
+
+  void CreateRenderer(CellSpawn spawn, int row, int col) {
+    var cell = new Cell(spawn);
+
+    // If we can't add any more cells we've reached the game over state
+    if (!cellGrid.AddCell(cell, col)) {
+      State = BoardState.Lost;
+      Debug.Log("Player " + boardIndex + " has Lost");
+      return;
+    }
+
+    var pos = GridToWorldSpace(row, col);
+    // TODO Probably should be in the renderer's Init method
+    var obj = Instantiate(cellRendererPrefab, pos, Quaternion.identity) as GameObject;
+
+    obj.transform.parent = transform;
+    obj.GetComponent<CellRenderer>().Initialize(cell, this);
+    alive.Add(obj);
+    falling.Add(obj);
+  }
+
+  // Once all cells are fixed, resolve any connections between bombs and normal
+  // cells until cells are no longer fallings
+  // Returns true if all connections are resolved, false if we're still resolving
+  bool Resolve() {
+    if (falling.Count > 0) return false;
+    var toRemove = new List<GameObject>();
+    var toScore = new List<Cell>();
+
+    cellGrid.DestroyConnected();
+
+    alive.ForEach(o => {
+      var c = o.GetComponent<CellRenderer>().Cell;
+      if (!cellGrid.CellExists(c)) {
+        toRemove.Add(o);
+        toScore.Add(c);
+      }
+    });
+
+    ScoreCells(toScore);
+
+    toRemove.ForEach(o => {
+      alive.Remove(o);
+      falling.Remove(o);
+      o.GetComponent<CellRenderer>().Destroy();
+    });
+
+    MakeFalling();
+
+    return falling.Count == 0;
+  }
+
+  // Move all active cell groups according to their current speed to their current targets
+  void MoveActive() {
+    falling.ForEach(o => {
+      var target = o.GetComponent<CellRenderer>().TargetPosition;
+      float cellSpeed = State == BoardState.Playing ? speed : fallSpeed;
+      o.transform.position = Vector3.MoveTowards(o.transform.position, target, cellSpeed * Time.deltaTime);
+    });
+  }
+
+  // Starting from the second to last row find all the cells that need to be
+  // activated due to removal of cells beneath them
+  void MakeFalling() {
+    CellRenderer renderer;
+    alive.ForEach(obj => {
+      renderer = obj.GetComponent<CellRenderer>().UpdateTarget();
+      if (obj.transform.position != renderer.TargetPosition) {
+        falling.Add(obj);
+      }
+    });
+  }
+
+  // Removes the CellRenderers from the active list if the cell has reached it's target
+  // TODO Need to wait until the state is Landed
+  void MakeFixed() {
+    var toFixed = new List<GameObject>();
+    falling.ForEach(o => {
+      if (o.transform.position == o.GetComponent<CellRenderer>().TargetPosition) {
+        toFixed.Add(o);
+      }
+    });
+
+    toFixed.ForEach(obj => falling.Remove(obj));
+
+    if (falling.Count == 0) cellGrid.OnFixed();
+  }
+
+  void Decrement() {
+    alive.ForEach(obj => {
+      var r = obj.GetComponent<CellRenderer>();
+      if (r.Cell.Type == CellType.Counter) {
+        r.Render(round);
+      }
+    });
+  }
+
+  // After we have resolved, we'll need to combine any newly created groups and
+  // remove unused renderers
+  // Note: Once cells become part of a group, only the first cell in the group is
+  // responsible for rendering the entire group
+  void Combine() {
+    var toRemove = new List<GameObject>();
+    var toCombine = new List<CellRenderer>();
+    alive.ForEach(obj => {
+      var r = obj.GetComponent<CellRenderer>();
+      if (r.Cell.InGroup) {
+        // If the renderer's cell is in a group, and that group's cell
+        // is not the same as the renderer, then this renderer can be removed
+        // Or if the group has been removed from the board
+        if (r.Cell.Group.Cell != r.Cell || !cellGrid.GroupExists(r.Cell.Group) ) {
+          toRemove.Add(obj);
+        } else {
+          toCombine.Add(r);
+        }
+      }
+    });
+    toRemove.ForEach(obj => {
+      alive.Remove(obj);
+      falling.Remove(obj);
+      obj.GetComponent<CellRenderer>().Destroy();
+    });
+    toCombine.ForEach(r => r.Render(round));
+  }
+
+  internal Vector3 GridToWorldSpace(Point p) {
+    return GridToWorldSpace(p.Row, p.Col);
+  }
+
+  // Coverts a grid position (row, column) to world space coordinate (Vector3)
+  internal Vector3 GridToWorldSpace(float row, float col) {
+    row = gravity == Gravity.Down ? rowCount - (row + 1) : row;
+    var gridUnits = GridToWorldUnit();
+    var parentWidth = (columnCount - 1) * gridUnits;
+    var parentHeight = (rowCount - 1) * gridUnits;
+    var x = (transform.position.x - parentWidth / 2) + (col * gridUnits);
+    var y = (transform.position.y - parentHeight / 2) + (row * gridUnits);
+    return new Vector3(x, y, Zoffset());
+  }
+
+  internal float GridToWorldUnit() {
+    return ((cellSize + cellPadding) / (float)GameManager.PPU);
+  }
+
+  int WorldYtoGridRow(GameObject o) {
+    var pos = o.transform.position;
+    var half = (rowCount * GridToWorldUnit()) * 0.5f;
+    var min = transform.position.y - half;
+    var max = transform.position.y + half;
+    return Mathf.FloorToInt(((pos.y - min) * rowCount) / (max - min));
+  }
+
+  float Zoffset() {
+    return GameManager.zOffset + transform.position.z;
+  }
+
+  #endregion Grid
+
+  #region Control
+
+  // Note: If the state is Playing then any falling pieces by nature are player controllable
+  internal WaitForSeconds Drop(bool dropping) {
+    if (State == BoardState.Playing) {
+      speed = dropping ? dropSpeed : normalSpeed;
+    }
+    return new WaitForSeconds(0);
+  }
+
+  // Starting from the lowest cell determine if each cell is capable of
+  // being shifted horizontally based on it's current row and colujn.
+  // If true, update the grid and then update the renderer
+  internal WaitForSeconds MoveHorizontal(float delta) {
+    bool canMove = false;
+    int dir = delta < 0 ? -1 : 1;
+    List<Cell> cells;
+
+    if (State == BoardState.Playing) {
+      // Preflight test - check if the neighbooring cell is empty
+      cells = falling.ConvertAll(o => o.GetComponent<CellRenderer>().Cell);
+
+      canMove = falling.TrueForAll(o => {
+        var row = WorldYtoGridRow(o);
+        return row >= 0 && cellGrid.IsEmpty(row, o.GetComponent<CellRenderer>().Cell.Position.Col + dir);
+      });
+
+      if (canMove && (dir < 0 ? cellGrid.ShiftCellsLeft(cells) : cellGrid.ShiftCellsRight(cells))) {
+        falling.ForEach(o => {
+          var pos = o.transform.position;
+          o.transform.position = new Vector3(pos.x + (GridToWorldUnit() * dir), pos.y, Zoffset());
+          o.GetComponent<CellRenderer>().UpdateTarget();
+        });
+      }
+    }
+
+    //Debug.Log(cellGrid);
+
+    return new WaitForSeconds(!Mathf.Approximately(dir, 0f) && canMove ? moveDelay : 0f);
+  }
+
+  // The first block is always the rotating lever, the second block is the pivot
+  // Note this is only designed to work with a 2-block piece
+  internal WaitForSeconds Rotate(int rotation) {
+    if (State != BoardState.Playing || falling.Count < 2) {
+      Debug.Log("returning, not playing");
+      return new WaitForSeconds(0f);
+    }
+
+    GameObject lever = falling[0];
+    // TODO Instead of this we could just loop around the remaining
+    GameObject pivot = falling[1];
+    Cell leverCell = lever.GetComponent<CellRenderer>().Cell;
+    Cell pivotCell = pivot.GetComponent<CellRenderer>().Cell;
+    Point leverInGrid = new Point(WorldYtoGridRow(lever), leverCell.Position.Col);
+    Point pivotInGrid = new Point(WorldYtoGridRow(pivot), pivotCell.Position.Col);
+    List<Point> newPositions = cellGrid.RotateCells(
+      leverCell, leverInGrid, pivotCell, pivotInGrid, rotation < 0
+    );
+
+    // We just want to adjust the current position by the diff from the old/new position
+    // rather than set it to the new position as that will be rounded to an specific
+    // grid row/col
+    if (newPositions != null) {
+      var newLeverPos = newPositions[0];
+      var newPivotPosition = newPositions[1];
+      var pos = pivot.transform.position;
+
+      lever.transform.position = new Vector3(
+        pos.x - (pivotInGrid.Col - newLeverPos.Col) * GridToWorldUnit(),
+        pos.y - (pivotInGrid.Row - newLeverPos.Row) * GridToWorldUnit(),
+        Zoffset()
+      );
+      pivot.transform.position = new Vector3(
+        pos.x - (pivotInGrid.Col - newPivotPosition.Col) * GridToWorldUnit(),
+        pos.y - (pivotInGrid.Row - newPivotPosition.Row) * GridToWorldUnit(),
+        Zoffset()
+      );
+
+      //Debug.Log(cellGrid);
+
+      falling.ForEach(o => o.GetComponent<CellRenderer>().UpdateTarget());
+
+      return new WaitForSeconds(rotationDelay);
+    }
+
+    return new WaitForSeconds(0);
+  }
+
+  #endregion Control
+
+  #region Scoring and Countering
+  public void SendAttack(int count) {
+    var toSpawn = new List<CellSpawn>();
+    CellColor color;
+    for (int i = 0; i < count; i++) {
+      color = (CellColor)Random.Range(0, System.Enum.GetValues(typeof(CellColor)).Length);
+      toSpawn.Add(new CellSpawn(color, CellType.Counter, round));
+    }
+    int target = boardIndex == 0 ? 1 : 0;
+    Debug.Log("Board " + boardIndex + " Sending attack to " + target);
+    GameManager.Attack(new int[]{target}, toSpawn);
+  }
+
+  public void ReceiveAttack(List<CellSpawn> cellsToSpawn) {
+    pendingCounters = cellsToSpawn;
+    Debug.Log("Receiving attack");
+    //var outgoing = receiver.OutgoingActions.Where(a => a.GetType() == GetType()).FirstOrDefault();
+    //if (outgoing) {
+    //  // Reduce incoming power by whatever is smaller - the total amount or half of the power of the outgoing attack
+    //  int CancelPower = Mathf.Min(Power, Mathf.RoundToInt(outgoing.Power * 0.5f));
+    //  if (CancelPower > 0) {
+    //    Power = Power - CancelPower;
+    //    // Reduce outcoming power by double cancel power
+    //    outgoing.Power = outgoing.Power - CancelPower * 2;
+    //  }
+    //}
+    //if (Power > 0) DropCells(receiver);
+  }
+
+  void ScoreCells(List<Cell> cells) {
+    var score = Scoring.ScoreCells(round, cells);
+    if (score > 0) clearedThisRound.Add(score);
+  }
+
+  void ScoreRound() {
+    var roundScore = Scoring.ScoreRound(round, clearedThisRound);
+    score += roundScore;
+    Debug.Log("Round Score: "+roundScore+", Total Score: " + score);
+    if (roundScore > 0) {
+      SendAttack(roundScore);
+    }
+    clearedThisRound.Clear();
+  }
+
+  #endregion Scoring and Countering
 }

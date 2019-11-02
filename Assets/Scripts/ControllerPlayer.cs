@@ -3,12 +3,24 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class ControllerPlayer : Controller {
-  public override void RotateLeft() {
-  }
+	void Start () {
+    board = GetComponent<Board>();
+    if (board) StartCoroutine(HandleInput());
+	}
 
-  public override void RotateRight() {
-  }
+  IEnumerator HandleInput() {
+    while (true) {
+      float direction  = Input.GetAxis("Horizontal");
+      bool drop        = Input.GetButton("Drop");
+      bool rotateLeft  = Input.GetButtonDown("RotateCounterClockwise");
+      bool rotateRight = Input.GetButtonDown("RotateClockwise");
 
-  public override void Accelerate() {
+      //yield return board.Drop(drop);
+      if (direction != 0f) yield return board.MoveHorizontal(direction);
+      if (rotateLeft) yield return board.Rotate(90);
+      if (rotateRight) yield return board.Rotate(-90);
+
+      yield return 0;
+    }
   }
 }

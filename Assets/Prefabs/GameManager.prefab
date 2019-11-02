@@ -51,5 +51,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83243f91b36c2b249953c9e8b112d487, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerCount: 0
-  boardScript: {fileID: 0}
+  allowDiamond: 1
+  pieceCount: 2
+  playerCount: 2
+  PPU: 100
+  boardPrefab: {fileID: 1602582382233696, guid: a5f5f77091cce744086d569fcfd56fee,
+    type: 2}
